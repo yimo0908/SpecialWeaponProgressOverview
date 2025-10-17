@@ -239,7 +239,18 @@ public class InventoryWindow : Window, IDisposable
         return numbers;
     }
 
-    private static readonly List<List<uint>> ZodiacWeaponId = [];
+    private static readonly List<List<uint>> ZodiacWeaponId = 
+    [
+        [1665, 1735, 1805, 1874, 1944, 2046, 2135, 2191, 2192, 7887],  //半成品，50
+        [1675, 1746, 1816, 1885, 1955, 2052, 2140, 2213, 2214, 7888],  //本体，80
+        [6257, 6258, 6259, 6260, 6261, 6262, 6263, 6264, 6265, 9250],  //天极，90
+        [7824, 7825, 7826, 7827, 7828, 7829, 7830, 7831, 7832, 9251],  //魂晶，100
+        [7834, 7835, 7836, 7837, 7838, 7839, 7840, 7841, 7842, 9252],  //魂灵，100
+        [7863, 7864, 7865, 7866, 7867, 7868, 7869, 7870, 7871, 9253],  //新星，110
+        [8649, 8650, 8651, 8652, 8653, 8654, 8655, 8656, 8657, 9254],  //镇魂，115
+        [9491, 9492, 9493, 9494, 9495, 9496, 9497, 9498, 9499, 9501],  //黄道武器
+        [10054,10055,10056,10057,10058,10059,10060,10061,10062,10064], //黄道武器·本我
+    ];
     
     private static readonly List<List<uint>> AnimaWeaponId = 
     [
@@ -834,7 +845,32 @@ public class InventoryWindow : Window, IDisposable
 
     private void DrawZodiac()
     {
-        ImGui.Text($"太复杂了不做");
+        ImGui.BeginTable("ZodiacWeaponChart", ZodiacWeaponId.Count + 1, ImGuiTableFlags.Resizable | ImGuiTableFlags.RowBg);
+        ImGui.TableSetupColumn("职业");
+        ImGui.TableSetupColumn("半成品");
+        ImGui.TableSetupColumn("本体");
+        ImGui.TableSetupColumn("天极");
+        ImGui.TableSetupColumn("魂晶");
+        ImGui.TableSetupColumn("魂灵");
+        ImGui.TableSetupColumn("新星");
+        ImGui.TableSetupColumn("镇魂");
+        ImGui.TableSetupColumn("黄道武器");
+        ImGui.TableSetupColumn("黄道武器·本我");
+        ImGui.TableHeadersRow();
+        foreach (var jobId in ZodiacWeaponJobIdList)
+        { 
+            var line = zodiacWeaponProcess[jobId];
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.Text(ClassJobSheet.GetRow(jobId).Name.ExtractText());
+            
+            for (var j = 0; j < line.Count; j++)
+            { 
+                ImGui.TableNextColumn();
+                DrawWeaponCell(line[j], ZodiacWeaponId[j][NewJobIndex[jobId]]);
+            }
+        }
+        ImGui.EndTable();
     }
 
     private void DrawAnima()
