@@ -185,9 +185,10 @@ public class InventoryWindow : Window, IDisposable
         Initialized = null;
         IsInitialized = null;
         ItemCount = null;
+        GC.SuppressFinalize(this);
     }
     
-    private void PrintItemPayload(uint itemId)
+    private static void PrintItemPayload(uint itemId)
     {
         var itemRow = ItemSheet.GetRow(itemId);
         var payloadList = new List<Payload>
@@ -210,7 +211,7 @@ public class InventoryWindow : Window, IDisposable
         DalamudApi.ChatGui.Print(new XivChatEntry { Message = fullMessage });
     }
     
-    private void DrawWeaponCell(int count, uint itemId)
+    private static void DrawWeaponCell(int count, uint itemId)
     {
         Vector4 color = count > 0 ? new(0, 1, 0, 1) : new(0.5f, 0.5f, 0.5f, 1);
         string displayText = count > 0 ? "●" : "◯";
@@ -223,7 +224,7 @@ public class InventoryWindow : Window, IDisposable
         }
     }
     
-    private void CopyItemNameToClipboard(uint itemId)
+    private static void CopyItemNameToClipboard(uint itemId)
     {
         var itemName = ItemSheet.GetRow(itemId).Name.ExtractText();
         ImGui.SetClipboardText(itemName);
@@ -629,21 +630,14 @@ public class InventoryWindow : Window, IDisposable
             for (var j = 0; j < weaponIdList.Count; j++)//阶段
             {
                 var curJobId = jobIdList[i];
-                // 针对Ultimate武器(绝境战)的特殊处理
-                int jobIndex;
-                if (weaponIndex == 9) // 绝境战
+                // 针对不同武器类型使用专用索引
+                var jobIndex = weaponIndex switch
                 {
-                    // 前5项使用JobIndex，第6项使用NewJobIndex
-                    jobIndex = j < 5 ? JobIndex[curJobId] : NewJobIndex[curJobId];
-                }
-                else
-                {
-                    // 针对Phantom武器使用专用索引
-                    jobIndex = weaponIndex == 6 ? NewJobIndex[curJobId] : 
-                                  (weaponIndex is 7 or 8) ? LifeJobIndex[curJobId] :
-                                  JobIndex[curJobId];
-                }
-                
+                    1 or 6 => NewJobIndex[curJobId],                         // 古武 幻武使用NewJobIndex
+                    7 or 8 => LifeJobIndex[curJobId],                        // 天钢和莫雯使用LifeJobIndex
+                    9 => j < 5 ? JobIndex[curJobId] : NewJobIndex[curJobId], // 绝境战特殊处理
+                    _ => JobIndex[curJobId]                                  // 其他武器使用JobIndex
+                };
                 // 添加边界检查
                 if (jobIndex < weaponIdList[j].Count)
                 {
