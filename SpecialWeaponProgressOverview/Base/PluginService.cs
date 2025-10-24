@@ -4,9 +4,9 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 
-namespace SpecialWeaponProgressOverview;
+namespace SpecialWeaponProgressOverview.Base;
 
-public class DalamudApi
+public class PluginService
 {
     [PluginService] public static IDalamudPluginInterface PluginInterface { get; set; } = null!;
 
@@ -33,11 +33,11 @@ public class DalamudApi
         IsInitialized = true;
         try
         {
-            pi.Create<DalamudApi>();
+            pi.Create<PluginService>();
         }
         catch (Exception ex)
         {
-            PluginLog.Error($"Error initialising {nameof(DalamudApi)}", ex);
+            PluginLog.Error($"Error initialising {nameof(PluginService)}", ex);
         }
     }
 }

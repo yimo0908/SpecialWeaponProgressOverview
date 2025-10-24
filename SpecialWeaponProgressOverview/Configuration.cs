@@ -1,5 +1,6 @@
 using System;
 using Dalamud.Configuration;
+using SpecialWeaponProgressOverview.Base;
 
 namespace SpecialWeaponProgressOverview;
 
@@ -10,6 +11,6 @@ public class Configuration : IPluginConfiguration
 
     public void Save()
     {
-        DalamudApi.PluginInterface.SavePluginConfig(this);
+        PluginService.PluginInterface.SavePluginConfig(this);
     }
 }

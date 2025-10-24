@@ -1,6 +1,7 @@
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
+using SpecialWeaponProgressOverview.Base;
 
 namespace SpecialWeaponProgressOverview;
 
@@ -13,10 +14,10 @@ public sealed class Plugin : IDalamudPlugin
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
         InventoryWindow = new InventoryWindow();
-        DalamudApi.Init(pluginInterface);
+        PluginService.Init(pluginInterface);
         WindowSystem.AddWindow(InventoryWindow);
 
-        DalamudApi.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
+        PluginService.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
             HelpMessage = "Open main page"
         });
@@ -32,7 +33,7 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.RemoveAllWindows();
         InventoryWindow.Dispose();
 
-        DalamudApi.CommandManager.RemoveHandler(CommandName);
+        PluginService.CommandManager.RemoveHandler(CommandName);
     }
 
     private void OnCommand(string command, string args)
