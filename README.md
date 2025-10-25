@@ -46,26 +46,26 @@
 ### 项目结构
 
 SpecialWeaponProgressOverview/
-├── Base/                                 # 核心功能实现
-│   ├── PluginService.cs                  # 插件服务管理
-│   └── Process.cs                        # 进度处理
-├── Data/                                 # 数据处理和计算
-│   ├── Compute.cs                        # 材料需求计算
-│   ├── DataBase.cs                       # 武器数据存储
-│   └── Inventory.cs                      # 背包数据管理
-├── Drawer/                               # UI绘制组件
-│   ├── DrawMethod.cs                     # 通用绘制方法
-│   ├── AnimaDrawer.cs                    # 魂武界面
-│   ├── BozjaDrawer.cs                    # 义武界面
-│   ├── EurekaDrawer.cs                   # 优武界面
-│   ├── MandervillousDrawer.cs            # 曼武界面
-│   ├── PhantomDrawer.cs                  # 幻武界面
-│   ├── SkysteelDrawer.cs                 # 天钢工具界面
-│   ├── SplendorousDrawer.cs              # 莫雯工具界面
-│   ├── UltimateDrawer.cs                 # 绝本武器界面
-│   └── ZodiacDrawer.cs                   # 古武界面
-├── Plugin.cs                             # 插件主入口
-├── MainWindow.cs                         # 主窗口实现
+├── Base/                                 # 核心功能实现  
+│   ├── PluginService.cs                  # 插件服务管理  
+│   └── Process.cs                        # 进度处理  
+├── Data/                                 # 数据处理和计算  
+│   ├── Compute.cs                        # 材料需求计算  
+│   ├── DataBase.cs                       # 武器数据存储  
+│   └── Inventory.cs                      # 背包数据管理  
+├── Drawer/                               # UI绘制组件  
+│   ├── DrawMethod.cs                     # 通用绘制方法  
+│   ├── AnimaDrawer.cs                    # 魂武界面  
+│   ├── BozjaDrawer.cs                    # 义武界面  
+│   ├── EurekaDrawer.cs                   # 优武界面  
+│   ├── MandervillousDrawer.cs            # 曼武界面  
+│   ├── PhantomDrawer.cs                  # 幻武界面  
+│   ├── SkysteelDrawer.cs                 # 天钢工具界面  
+│   ├── SplendorousDrawer.cs              # 莫雯工具界面  
+│   ├── UltimateDrawer.cs                 # 绝本武器界面  
+│   └── ZodiacDrawer.cs                   # 古武界面  
+├── Plugin.cs                             # 插件主入口  
+├── MainWindow.cs                         # 主窗口实现  
 └── Configuration.cs                      # 配置文件
 
 ### 更新指南
