@@ -45,7 +45,7 @@
 
 ### 项目结构
 
-SpecialWeaponProgressOverview/
+SpecialWeaponProgressOverview/  
 ├── Base/                                 # 核心功能实现  
 │   ├── PluginService.cs                  # 插件服务管理  
 │   └── Process.cs                        # 进度处理  
