@@ -30,7 +30,7 @@ namespace SpecialWeaponProgressOverview.Base
         private static readonly Dictionary<uint, int> NewJobIndex = DataBase.NewJobIndex;
         private static readonly Dictionary<uint, int> LifeJobIndex = DataBase.LifeJobIndex;
 
-        private static readonly Dictionary<int, int> JobsOfSpecialWeapon = new()
+        public static readonly Dictionary<int, int> JobsOfSpecialWeapon = new()
         {
             { 1, 10 }, //古武
             { 2, 13 }, //魂武
@@ -43,9 +43,9 @@ namespace SpecialWeaponProgressOverview.Base
             { 9, 21 }, //绝境战
         };
 
-        private readonly InventoryWindow.ItemCountDelegate getItemCountTotal;
+        private readonly MainWindow.ItemCountDelegate getItemCountTotal;
 
-        public Process(InventoryWindow.ItemCountDelegate getItemCountDelegate)
+        public Process(MainWindow.ItemCountDelegate getItemCountDelegate)
         {
             getItemCountTotal = getItemCountDelegate;
         }

@@ -10,14 +10,16 @@ namespace SpecialWeaponProgressOverview.Drawer
     public class PhantomDrawer(
         List<List<uint>> phantomWeaponId,
         List<uint> phantomWeaponJobIdList,
-        Dictionary<uint, List<int>> phantomWeaponProcess)
+        Dictionary<uint, List<int>> phantomWeaponProcess,
+        MainWindow.ItemCountDelegate getItemCountTotal)
     {
         private static readonly ExcelSheet<ClassJob>
             ClassJobSheet = PluginService.DataManager.GetExcelSheet<ClassJob>();
 
         public void Draw()
         {
-            ImGui.Text($"{Compute.ComputeNeedsPhantom(phantomWeaponProcess, phantomWeaponJobIdList)}");
+            var funcAdapter = new System.Func<uint, int>(id => getItemCountTotal(id));
+            ImGui.Text($"{Compute.ComputeNeedsPhantom(phantomWeaponProcess, phantomWeaponJobIdList, funcAdapter)}");
             ImGui.BeginTable("PhantomWeaponChart", phantomWeaponId.Count + 1,
                              ImGuiTableFlags.Resizable | ImGuiTableFlags.RowBg);
             ImGui.TableSetupColumn("职业");
@@ -35,7 +37,7 @@ namespace SpecialWeaponProgressOverview.Drawer
                 for (var j = 0; j < line.Count; j++)
                 {
                     ImGui.TableNextColumn();
-                    DrawMethod.DrawWeaponCell(line[j], phantomWeaponId[j][DataBase.JobIndex[jobId]]);
+                    DrawMethod.DrawWeaponCell(line[j], phantomWeaponId[j][DataBase.NewJobIndex[jobId]]);
                 }
             }
 

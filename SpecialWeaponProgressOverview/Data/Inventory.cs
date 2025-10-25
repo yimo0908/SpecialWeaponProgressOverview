@@ -46,7 +46,7 @@ public static class Inventory
         ItemCount = PluginService.PluginInterface.GetIpcSubscriber<uint, ulong, uint, uint>("AllaganTools.ItemCount");
     }
 
-    public static readonly Dictionary<ulong, Dictionary<uint, InventoryWindow.ItemInfo>> RetainerData =
+    public static readonly Dictionary<ulong, Dictionary<uint, MainWindow.ItemInfo>> RetainerData =
         new();
 
     public static uint GetRetainerInventoryItem(uint itemId, ulong retainerId)
@@ -102,12 +102,12 @@ public static class Inventory
                             {
                                 ret.TryAdd(
                                     itemId,
-                                    new InventoryWindow.ItemInfo(itemId, GetRetainerInventoryItem(itemId, retainerId)));
+                                    new MainWindow.ItemInfo(itemId, GetRetainerInventoryItem(itemId, retainerId)));
                             }
                         }
                         else
                         {
-                            RetainerData.TryAdd(retainerId, new Dictionary<uint, InventoryWindow.ItemInfo>());
+                            RetainerData.TryAdd(retainerId, new Dictionary<uint, MainWindow.ItemInfo>());
                             var newret = RetainerData[retainerId];
                             if (newret.TryGetValue(itemId, out var item))
                             {
@@ -118,7 +118,7 @@ public static class Inventory
                             {
                                 newret.TryAdd(
                                     itemId,
-                                    new InventoryWindow.ItemInfo(itemId, GetRetainerInventoryItem(itemId, retainerId)));
+                                    new MainWindow.ItemInfo(itemId, GetRetainerInventoryItem(itemId, retainerId)));
                             }
                         }
                     }

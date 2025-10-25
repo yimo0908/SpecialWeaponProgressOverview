@@ -13,20 +13,19 @@ public static class Compute
     private static readonly ExcelSheet<Item> ItemSheet = PluginService.DataManager.GetExcelSheet<Item>();
     
     public static string ComputeNeedsBozja(
-        Dictionary<uint, List<int>> bozjaWeaponProcess,
         List<List<uint>> bozjaWeaponId,
         List<uint> bozjaWeaponJobIdList,
         Func<uint, int> getItemCountTotal)
     {
         Dictionary<uint, List<int>> bozjaWeaponNeed = new();
-        for (var i = 0; i < 6; i++) // JobsOfSpecialWeapon[4] = 6
+        for (var i = 0; i < 17; i++) // JobsOfSpecialWeapon[4] = 17
         {
             bozjaWeaponNeed.Add(bozjaWeaponJobIdList[i], Enumerable.Repeat(0, bozjaWeaponId.Count).ToList());
         }
 
-        for (var i = 0; i < 6; i++) //Job Index
+        for (var i = 0; i < 17; i++)
         {
-            for (var j = 0; j < bozjaWeaponId.Count; j++) //阶段
+            for (var j = 0; j < bozjaWeaponId.Count; j++)
             {
                 var curWeaponId = bozjaWeaponId[j][i];
                 var curJobId = bozjaWeaponJobIdList[i];
@@ -80,21 +79,20 @@ public static class Compute
     }
 
     public static string ComputeNeedsMandervillous(
-        Dictionary<uint, List<int>> mandervillousWeaponProcess,
         List<List<uint>> mandervillousWeaponId,
         List<uint> mandervillousWeaponJobIdList,
         Func<uint, int> getItemCountTotal)
     {
         Dictionary<uint, List<int>> mandervillousWeaponNeed = new();
-        for (var i = 0; i < 5; i++) // JobsOfSpecialWeapon[5] = 5
+        for (var i = 0; i < 19; i++) // JobsOfSpecialWeapon[5] = 19
         {
             mandervillousWeaponNeed.Add(mandervillousWeaponJobIdList[i],
                                        Enumerable.Repeat(0, mandervillousWeaponId.Count).ToList());
         }
 
-        for (var i = 0; i < 5; i++) //Job Index
+        for (var i = 0; i < 19; i++)
         {
-            for (var j = 0; j < mandervillousWeaponId.Count; j++) //阶段
+            for (var j = 0; j < mandervillousWeaponId.Count; j++)
             {
                 var curWeaponId = mandervillousWeaponId[j][i];
                 var curJobId = mandervillousWeaponJobIdList[i];
@@ -125,9 +123,11 @@ public static class Compute
 
     public static string ComputeNeedsPhantom(
         Dictionary<uint, List<int>> phantomWeaponProcess,
-        List<uint> phantomWeaponJobIdList)
+        List<uint> phantomWeaponJobIdList,
+        Func<uint, int> getItemCountTotal)
     {
         List<int> needs = [0, 0];
+        List<int> have = [getItemCountTotal(47750u), getItemCountTotal(46850u)]; 
         foreach (var jobId in phantomWeaponJobIdList)
         {
             var process = phantomWeaponProcess[jobId];
@@ -148,8 +148,8 @@ public static class Compute
         }
 
         var res = $"需要: {needs[0]}个新月矿石, {needs[1]}个上弦月矿石\n" +
-                  $"仍需: {needs[0]}个新月矿石, {needs[1]}个上弦月矿石\n" +  // 这里应该是减去已有数量，但在原始代码中没有计算have值
-                  $"共计: {needs[0] + needs[1]}天道神典石";  // 原始代码中这部分逻辑有问题，这里做了修正
+                  $"仍需: {needs[0] - have[0]}个新月矿石, {needs[1] - have[1]}个上弦月矿石\n" +  
+                  $"共计: {(needs[0] - have[0] + needs[1] - have[1]) * 500}天道神典石";  
         return res;
     }
 

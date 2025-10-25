@@ -39,7 +39,7 @@ namespace SpecialWeaponProgressOverview.Drawer
                 for (var j = 0; j < line.Count; j++)
                 {
                     // 使用与GetProcessData相同的索引逻辑确定jobIndex
-                    int jobIndex = j < 5 ? DataBase.JobIndex[jobId] : DataBase.NewJobIndex[jobId];
+                    var jobIndex = j < 5 ? DataBase.JobIndex[jobId] : DataBase.NewJobIndex[jobId];
 
                     // 检查索引是否在有效范围内
                     if (jobIndex >= ultimateWeaponId[j].Count)

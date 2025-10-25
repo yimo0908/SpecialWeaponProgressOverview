@@ -10,7 +10,7 @@ using SpecialWeaponProgressOverview.Base;
 
 namespace SpecialWeaponProgressOverview.Drawer;
 
-public class DrawMethod
+public static class DrawMethod
 {
     private static readonly ExcelSheet<Item> ItemSheet = PluginService.DataManager.GetExcelSheet<Item>();
     
@@ -46,7 +46,7 @@ public class DrawMethod
     public static void DrawWeaponCell(int count, uint itemId)
     {
         Vector4 color = count > 0 ? new(0, 1, 0, 1) : new(0.5f, 0.5f, 0.5f, 1);
-        string displayText = count > 0 ? "●" : "◯";
+        var displayText = count > 0 ? "●" : "◯";
         ImGui.TextColored(color, displayText);
 
         if (ImGui.IsItemHovered())

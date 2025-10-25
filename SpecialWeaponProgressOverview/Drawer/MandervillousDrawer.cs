@@ -11,7 +11,7 @@ namespace SpecialWeaponProgressOverview.Drawer
         List<List<uint>> mandervillousWeaponId,
         List<uint> mandervillousWeaponJobIdList,
         Dictionary<uint, List<int>> mandervillousWeaponProcess,
-        InventoryWindow.ItemCountDelegate getItemCountTotal)
+        MainWindow.ItemCountDelegate getItemCountTotal)
     {
         private static readonly ExcelSheet<ClassJob>
             ClassJobSheet = PluginService.DataManager.GetExcelSheet<ClassJob>();
@@ -20,7 +20,7 @@ namespace SpecialWeaponProgressOverview.Drawer
         {
             var funcAdapter = new System.Func<uint, int>(id => getItemCountTotal(id));
             ImGui.Text(
-                $"{Compute.ComputeNeedsMandervillous(mandervillousWeaponProcess, mandervillousWeaponId, mandervillousWeaponJobIdList, funcAdapter)}");
+                $"{Compute.ComputeNeedsMandervillous(mandervillousWeaponId, mandervillousWeaponJobIdList, funcAdapter)}");
             ImGui.BeginTable("MandervillousWeaponChart", mandervillousWeaponId.Count + 1,
                              ImGuiTableFlags.Resizable | ImGuiTableFlags.RowBg);
             ImGui.TableSetupColumn("职业");

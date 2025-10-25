@@ -11,7 +11,7 @@ namespace SpecialWeaponProgressOverview.Drawer
         List<List<uint>> bozjaWeaponId,
         List<uint> bozjaWeaponJobIdList,
         Dictionary<uint, List<int>> bozjaWeaponProcess,
-        InventoryWindow.ItemCountDelegate getItemCountTotal)
+        MainWindow.ItemCountDelegate getItemCountTotal)
     {
         private static readonly ExcelSheet<ClassJob>
             ClassJobSheet = PluginService.DataManager.GetExcelSheet<ClassJob>();
@@ -20,7 +20,7 @@ namespace SpecialWeaponProgressOverview.Drawer
         {
             var funcAdapter = new System.Func<uint, int>(id => getItemCountTotal(id));
             ImGui.Text(
-                $"{Compute.ComputeNeedsBozja(bozjaWeaponProcess, bozjaWeaponId, bozjaWeaponJobIdList, funcAdapter)}");
+                $"{Compute.ComputeNeedsBozja(bozjaWeaponId, bozjaWeaponJobIdList, funcAdapter)}");
             ImGui.BeginTable("BozjaWeaponChart", bozjaWeaponId.Count + 1,
                              ImGuiTableFlags.Resizable | ImGuiTableFlags.RowBg);
             ImGui.TableSetupColumn("职业");

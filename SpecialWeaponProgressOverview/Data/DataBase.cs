@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace SpecialWeaponProgressOverview.Data;
 
-public class DataBase
+public static class DataBase
 {
     public static readonly List<List<uint>> ZodiacWeaponId =
     [
@@ -18,8 +18,7 @@ public class DataBase
         [9491, 9492, 9493, 9494, 9495, 9496, 9497, 9498, 9499, 9501],           //黄道武器
         [10054, 10055, 10056, 10057, 10058, 10059, 10060, 10061, 10062, 10064], //黄道武器·本我
     ];
-
-
+    
     public static readonly List<List<uint>> AnimaWeaponId =
     [
         Enumerable.Range(13611, 13).Select(i => (uint)i).ToList(), //魂武一阶段，元灵武器·元灵
@@ -50,8 +49,7 @@ public class DataBase
         Enumerable.Range(24691, 15).Select(i => (uint)i).ToList(), //优雷卡
         Enumerable.Range(24707, 15).Select(i => (uint)i).ToList(), //优雷卡·改
     ];
-
-
+    
     public static readonly List<List<uint>> BozjaWeaponId =
     [
         Enumerable.Range(30228, 17).Select(i => (uint)i).ToList(), //义军武器
