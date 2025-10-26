@@ -24,35 +24,6 @@ public class MainWindow : Window, IDisposable
 
     public delegate int ItemCountDelegate(uint itemId);
 
-    internal static void Init()
-    {
-        Inventory.Init();
-    }
-
-    public class ItemInfo(uint itemId, uint quantity)
-    {
-        public uint ItemId { get; set; } = itemId;
-        public uint Quantity { get; set; } = quantity;
-    }
-
-    private int GetItemCountTotal(uint itemId) => Inventory.GetItemCountTotal(itemId);
-
-    public MainWindow()
-        : base("SpecialWeaponProgressOverview", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
-    {
-        SizeConstraints = new WindowSizeConstraints
-        {
-            MinimumSize = new Vector2(375, 330),
-            MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
-        };
-    }
-
-    public void Dispose()
-    {
-        Inventory.Dispose();
-        GC.SuppressFinalize(this);
-    }
-
     private static readonly Dictionary<string, List<List<uint>>> WeaponIds = new()
     {
         { "Zodiac", DataBase.ZodiacWeaponId },
@@ -78,7 +49,7 @@ public class MainWindow : Window, IDisposable
         { "Splendorous", DataBase.SplendorousWeaponJobIdList },
         { "Ultimate", DataBase.UltimateWeaponJobIdList }
     };
-    
+
     private readonly Dictionary<string, Dictionary<uint, List<int>>> weaponProcess = new()
     {
         { "zodiac", new Dictionary<uint, List<int>>() },
@@ -91,6 +62,35 @@ public class MainWindow : Window, IDisposable
         { "splendorous", new Dictionary<uint, List<int>>() },
         { "ultimate", new Dictionary<uint, List<int>>() }
     };
+
+    internal static void Init()
+    {
+        Inventory.Init();
+    }
+
+    public class ItemInfo(uint itemId, uint quantity)
+    {
+        public uint ItemId { get; set; } = itemId;
+        public uint Quantity { get; set; } = quantity;
+    }
+
+    private static int GetItemCountTotal(uint itemId) => Inventory.GetItemCountTotal(itemId);
+
+    public MainWindow()
+        : base("SpecialWeaponProgressOverview", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+    {
+        SizeConstraints = new WindowSizeConstraints
+        {
+            MinimumSize = new Vector2(375, 330),
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
+        };
+    }
+
+    public void Dispose()
+    {
+        Inventory.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     private readonly string[] specialWeaponSeriesList =
     [
@@ -121,71 +121,103 @@ public class MainWindow : Window, IDisposable
             ImGui.SetTooltip("item search没开ipc也没开指令交互");
         }
 
-        ImGui.Combo("武器系列##选武器", ref selectedWeaponSeriesIndex, specialWeaponSeriesList, 6);
-        if (selectedWeaponSeriesIndex != 0)
-        {
-            var weaponType = selectedWeaponSeriesIndex switch
-            {
-                1 => "zodiac",
-                2 => "anima",
-                3 => "eureka",
-                4 => "bozja",
-                5 => "mandervillous",
-                6 => "phantom",
-                7 => "skysteel",
-                8 => "splendorous",
-                9 => "ultimate",
-                _ => throw new ArgumentOutOfRangeException(),
-            };
+        ImGui.Combo("武器系列##选武器", ref selectedWeaponSeriesIndex, specialWeaponSeriesList, specialWeaponSeriesList.Length);
 
+        if (selectedWeaponSeriesIndex > 0 && selectedWeaponSeriesIndex < specialWeaponSeriesList.Length)
+        {
+            var weaponType = GetWeaponType(selectedWeaponSeriesIndex);
             var currentProcess = weaponProcess[weaponType];
-            _ = selectedWeaponSeriesIndex switch
-            {
-                1 => ExecuteAndDraw(() => process?.GetProcessData(1, WeaponIds["Zodiac"], WeaponJobIds["Zodiac"], ref currentProcess), DrawZodiac),
-                2 => ExecuteAndDraw(() => process?.GetProcessData(2, WeaponIds["Anima"], WeaponJobIds["Anima"], ref currentProcess), DrawAnima),
-                3 => ExecuteAndDraw(() => process?.GetProcessData(3, WeaponIds["Eureka"], WeaponJobIds["Eureka"], ref currentProcess), DrawEureka),
-                4 => ExecuteAndDraw(() => process?.GetProcessData(4, WeaponIds["Bozja"], WeaponJobIds["Bozja"], ref currentProcess), DrawBozja),
-                5 => ExecuteAndDraw(() => process?.GetProcessData(5, WeaponIds["Mandervillous"], WeaponJobIds["Mandervillous"], ref currentProcess), DrawMandervillous),
-                6 => ExecuteAndDraw(() => process?.GetProcessData(6, WeaponIds["Phantom"], WeaponJobIds["Phantom"], ref currentProcess), DrawPhantom),
-                7 => ExecuteAndDraw(() => process?.GetProcessData(7, WeaponIds["Skysteel"], WeaponJobIds["Skysteel"], ref currentProcess), DrawSkysteel),
-                8 => ExecuteAndDraw(() => process?.GetProcessData(8, WeaponIds["Splendorous"], WeaponJobIds["Splendorous"], ref currentProcess), DrawSplendorous),
-                9 => ExecuteAndDraw(() => process?.GetProcessData(9, WeaponIds["Ultimate"], WeaponJobIds["Ultimate"], ref currentProcess), DrawUltimate),
-                _ => throw new ArgumentOutOfRangeException(),
-            };
+
+            // 执行数据处理
+            process?.GetProcessData(selectedWeaponSeriesIndex, WeaponIds[GetWeaponDisplayName(weaponType)], WeaponJobIds[GetWeaponDisplayName(weaponType)], ref currentProcess);
+
+            // 绘制对应界面
+            DrawWeaponType(weaponType);
 
             weaponProcess[weaponType] = currentProcess;
         }
+    }
 
-        object? ExecuteAndDraw(Action processData, Action draw)
+    private static string GetWeaponType(int index)
+    {
+        return index switch
         {
-            processData();
-            draw();
-            return null;
+            1 => "zodiac",
+            2 => "anima",
+            3 => "eureka",
+            4 => "bozja",
+            5 => "mandervillous",
+            6 => "phantom",
+            7 => "skysteel",
+            8 => "splendorous",
+            9 => "ultimate",
+            _ => throw new ArgumentOutOfRangeException(nameof(index)),
+        };
+    }
+
+    private static string GetWeaponDisplayName(string weaponType)
+    {
+        return weaponType switch
+        {
+            "zodiac" => "Zodiac",
+            "anima" => "Anima",
+            "eureka" => "Eureka",
+            "bozja" => "Bozja",
+            "mandervillous" => "Mandervillous",
+            "phantom" => "Phantom",
+            "skysteel" => "Skysteel",
+            "splendorous" => "Splendorous",
+            "ultimate" => "Ultimate",
+            _ => throw new ArgumentOutOfRangeException(nameof(weaponType)),
+        };
+    }
+
+    private void DrawWeaponType(string weaponType)
+    {
+        switch (weaponType)
+        {
+            case "zodiac":
+                zodiacDrawer?.Draw();
+                break;
+            case "anima":
+                animaDrawer?.Draw();
+                break;
+            case "eureka":
+                eurekaDrawer?.Draw();
+                break;
+            case "bozja":
+                bozjaDrawer?.Draw();
+                break;
+            case "mandervillous":
+                mandervillousDrawer?.Draw();
+                break;
+            case "phantom":
+                phantomDrawer?.Draw();
+                break;
+            case "skysteel":
+                skysteelDrawer?.Draw();
+                break;
+            case "splendorous":
+                splendorousDrawer?.Draw();
+                break;
+            case "ultimate":
+                ultimateDrawer?.Draw();
+                break;
         }
     }
 
     public void InitChart()
     {
         process = new Process(GetItemCountTotal);
+
+        // 初始化所有武器类型的处理数据
         for (var i = 1; i <= 9; i++)
         {
-            var weaponType = i switch
-            {
-                1 => "zodiac",
-                2 => "anima",
-                3 => "eureka",
-                4 => "bozja",
-                5 => "mandervillous",
-                6 => "phantom",
-                7 => "skysteel",
-                8 => "splendorous",
-                9 => "ultimate",
-                _ => throw new ArgumentOutOfRangeException(),
-            };
-
-            weaponProcess[weaponType] = process.InitChart(i);
+            var weaponType = GetWeaponType(i);
+            weaponProcess[weaponType] = Process.InitChart(i);
         }
 
+        // 初始化所有Drawer
         zodiacDrawer = new ZodiacDrawer(WeaponIds["Zodiac"], WeaponJobIds["Zodiac"], weaponProcess["zodiac"]);
         animaDrawer = new AnimaDrawer(WeaponIds["Anima"], WeaponJobIds["Anima"], weaponProcess["anima"]);
         eurekaDrawer = new EurekaDrawer(WeaponIds["Eureka"], WeaponJobIds["Eureka"], weaponProcess["eureka"]);
@@ -196,22 +228,4 @@ public class MainWindow : Window, IDisposable
         splendorousDrawer = new SplendorousDrawer(WeaponIds["Splendorous"], WeaponJobIds["Splendorous"], weaponProcess["splendorous"]);
         ultimateDrawer = new UltimateDrawer(WeaponIds["Ultimate"], WeaponJobIds["Ultimate"], weaponProcess["ultimate"]);
     }
-
-    private void DrawZodiac() => zodiacDrawer?.Draw();
-
-    private void DrawAnima() => animaDrawer?.Draw();
-
-    private void DrawEureka() => eurekaDrawer?.Draw();
-
-    private void DrawBozja() => bozjaDrawer?.Draw();
-
-    private void DrawMandervillous() => mandervillousDrawer?.Draw();
-
-    private void DrawPhantom() => phantomDrawer?.Draw();
-
-    private void DrawSkysteel() => skysteelDrawer?.Draw();
-
-    private void DrawSplendorous() => splendorousDrawer?.Draw();
-
-    private void DrawUltimate() => ultimateDrawer?.Draw();
 }

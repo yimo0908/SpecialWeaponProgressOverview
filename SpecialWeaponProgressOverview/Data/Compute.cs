@@ -11,7 +11,7 @@ namespace SpecialWeaponProgressOverview.Data;
 public static class Compute
 {
     private static readonly ExcelSheet<Item> ItemSheet = PluginService.DataManager.GetExcelSheet<Item>();
-    
+
     public static string ComputeNeedsBozja(
         List<List<uint>> bozjaWeaponId,
         List<uint> bozjaWeaponJobIdList,
@@ -86,8 +86,7 @@ public static class Compute
         Dictionary<uint, List<int>> mandervillousWeaponNeed = new();
         for (var i = 0; i < 19; i++) // JobsOfSpecialWeapon[5] = 19
         {
-            mandervillousWeaponNeed.Add(mandervillousWeaponJobIdList[i],
-                                       Enumerable.Repeat(0, mandervillousWeaponId.Count).ToList());
+            mandervillousWeaponNeed.Add(mandervillousWeaponJobIdList[i], Enumerable.Repeat(0, mandervillousWeaponId.Count).ToList());
         }
 
         for (var i = 0; i < 19; i++)
@@ -105,7 +104,9 @@ public static class Compute
         }
 
         List<int> have =
-            [getItemCountTotal(38420u), getItemCountTotal(38940u), getItemCountTotal(40322u), getItemCountTotal(41032u)];
+        [
+            getItemCountTotal(38420u), getItemCountTotal(38940u), getItemCountTotal(40322u), getItemCountTotal(41032u)
+        ];
         List<int> needs = [0, 0, 0, 0];
         foreach (var jobId in mandervillousWeaponJobIdList)
         {
@@ -127,7 +128,7 @@ public static class Compute
         Func<uint, int> getItemCountTotal)
     {
         List<int> needs = [0, 0];
-        List<int> have = [getItemCountTotal(47750u), getItemCountTotal(46850u)]; 
+        List<int> have = [getItemCountTotal(47750u), getItemCountTotal(46850u)];
         foreach (var jobId in phantomWeaponJobIdList)
         {
             var process = phantomWeaponProcess[jobId];
@@ -148,8 +149,8 @@ public static class Compute
         }
 
         var res = $"需要: {needs[0]}个新月矿石, {needs[1]}个上弦月矿石\n" +
-                  $"仍需: {needs[0] - have[0]}个新月矿石, {needs[1] - have[1]}个上弦月矿石\n" +  
-                  $"共计: {(needs[0] - have[0] + needs[1] - have[1]) * 500}天道神典石";  
+                  $"仍需: {needs[0] - have[0]}个新月矿石, {needs[1] - have[1]}个上弦月矿石\n" +
+                  $"共计: {(needs[0] - have[0] + needs[1] - have[1]) * 500}天道神典石";
         return res;
     }
 
