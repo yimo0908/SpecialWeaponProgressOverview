@@ -20,5 +20,11 @@
       AssemblyName="$(AssemblyName)"
       MakeZip="true"/>
   </Target>
+
+  <ItemGroup>
+    <!-- KamiToolKit: project reference when using submodule (KamiToolKit) -->
+    <ProjectReference Include="..\..\KamiToolKit\KamiToolKit.csproj" />
+  </ItemGroup>
+
 </Project>
 
