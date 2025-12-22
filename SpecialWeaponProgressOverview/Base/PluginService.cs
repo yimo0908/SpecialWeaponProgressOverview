@@ -12,6 +12,7 @@ public class PluginService
     [PluginService] public static ICommandManager CommandManager { get; set; } = null!;
     [PluginService] public static IChatGui ChatGui { get; set; } = null!;
     [PluginService] public static IPluginLog PluginLog { get; set; } = null!;
+    [PluginService] public static IObjectTable ObjectTable { get; set; } = null!;
     [PluginService] public static IClientState ClientState { get; set; } = null!;
     [PluginService] public static ICondition Condition { get; set; } = null!;
 

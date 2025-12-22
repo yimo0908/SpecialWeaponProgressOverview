@@ -106,7 +106,7 @@ public class MainWindow : Window, IDisposable
             InitChart();
         }
 
-        var localPlayer = PluginService.ClientState.LocalPlayer;
+        var localPlayer = PluginService.ObjectTable.LocalPlayer;
         if (localPlayer is null)
         {
             ImGui.Text("未获取到角色信息");
