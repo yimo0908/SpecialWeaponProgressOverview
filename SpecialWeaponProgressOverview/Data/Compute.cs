@@ -139,8 +139,9 @@ public static class Compute
     )
     {
         // 默认与原实现行为一致
-        materialItemIds ??= [47750u, 46850u];
-        requiredPerPhase ??= [3, 3];
+        // 新增第三阶段所需材料 50058，且每阶段均需 3 个
+        materialItemIds ??= new List<uint> { 47750u, 46850u, 50058u };
+        requiredPerPhase ??= new List<int> { 3, 3, 3 };
 
         var n = Math.Min(materialItemIds.Count, requiredPerPhase.Count);
         var needs = Enumerable.Repeat(0, n).ToList();

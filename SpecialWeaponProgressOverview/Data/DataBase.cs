@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-
 namespace SpecialWeaponProgressOverview.Data;
 
 public static class DataBase
@@ -72,6 +71,7 @@ public static class DataBase
     [
         Enumerable.Range(47869, 21).Select(i => (uint)i).ToList(), //幻境武器·半影
         Enumerable.Range(47006, 21).Select(i => (uint)i).ToList(), //幻境武器·本影
+        Enumerable.Range(50032, 21).Select(i => (uint)i).ToList(), //幻境武器·黯影
     ];
 
     public static readonly List<List<uint>> SkysteelWeaponId =
