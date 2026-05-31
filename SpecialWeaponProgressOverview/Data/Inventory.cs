@@ -5,153 +5,121 @@ using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Plugin.Ipc;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using SpecialWeaponProgressOverview.Base;
+using SpecialWeaponProgressOverview.Models;
 
 namespace SpecialWeaponProgressOverview.Data;
 
 public static class Inventory
 {
-    private static ICallGateSubscriber<uint, ulong, uint, uint>? ItemCount;
-    private static ICallGateSubscriber<bool, bool>? Initialized;
-    private static ICallGateSubscriber<bool>? IsInitialized;
-    
-    public static bool AToolsInstalled
-    {
-        get
-        {
-            return PluginService.PluginInterface.InstalledPlugins.Any(x => x.InternalName is "Allagan Tools"
-                                                                            or "InventoryTools");
-        }
-    }
+    private static ICallGateSubscriber<uint, ulong, uint, uint>? _itemCountIpc;
+    private static ICallGateSubscriber<bool, bool>?              _initializedEvent;
+    private static ICallGateSubscriber<bool>?                    _isInitialized;
 
-    public static bool AToolsEnabled => AToolsInstalled && IsInitialized != null && IsInitialized.InvokeFunc();
+    public static bool AToolsInstalled =>
+        PluginService.PluginInterface.InstalledPlugins.Any(
+            x => x.InternalName is "Allagan Tools" or "InventoryTools");
 
-    public static bool ATools => AToolsEnabled;
+    public static bool ATools => AToolsInstalled && _isInitialized?.InvokeFunc() == true;
 
     internal static void Init()
     {
-        Initialized = PluginService.PluginInterface.GetIpcSubscriber<bool, bool>("AllaganTools.Initialized");
-        IsInitialized = PluginService.PluginInterface.GetIpcSubscriber<bool>("AllaganTools.IsInitialized");
-        Initialized.Subscribe(SetupIpc);
-        PluginService.ClientState.Logout += LogoutCacheClear;
+        _initializedEvent = PluginService.PluginInterface.GetIpcSubscriber<bool, bool>("AllaganTools.Initialized");
+        _isInitialized    = PluginService.PluginInterface.GetIpcSubscriber<bool>("AllaganTools.IsInitialized");
+        _initializedEvent.Subscribe(SetupIpc);
+        PluginService.ClientState.Logout += ClearRetainerCache;
         SetupIpc(true);
     }
 
-    private static void LogoutCacheClear(int a, int b)
+    private static void ClearRetainerCache(int _, int __) => RetainerData.Clear();
+
+    private static void SetupIpc(bool _)
     {
-        RetainerData.Clear();
+        _itemCountIpc = PluginService.PluginInterface.GetIpcSubscriber<uint, ulong, uint, uint>("AllaganTools.ItemCount");
     }
 
-    private static void SetupIpc(bool obj)
+    // ---- 雇员背包缓存 ----
+    public static readonly Dictionary<ulong, Dictionary<uint, ItemInfo>> RetainerData = new();
+
+    private static uint GetRetainerInventoryItem(uint itemId, ulong retainerId)
     {
-        ItemCount = PluginService.PluginInterface.GetIpcSubscriber<uint, ulong, uint, uint>("AllaganTools.ItemCount");
-    }
+        if (!ATools || _itemCountIpc == null) return 0;
 
-    public static readonly Dictionary<ulong, Dictionary<uint, MainWindow.ItemInfo>> RetainerData =
-        new();
-
-    public static uint GetRetainerInventoryItem(uint itemId, ulong retainerId)
-    {
-        if (ATools && ItemCount != null)
-        {
-            return ItemCount.InvokeFunc(itemId, retainerId, 10000) +
-                   ItemCount.InvokeFunc(itemId, retainerId, 10001) +
-                   ItemCount.InvokeFunc(itemId, retainerId, 10002) +
-                   ItemCount.InvokeFunc(itemId, retainerId, 10003) +
-                   ItemCount.InvokeFunc(itemId, retainerId, 10004) +
-                   ItemCount.InvokeFunc(itemId, retainerId, 10005) +
-                   ItemCount.InvokeFunc(itemId, retainerId, 10006) +
-                   ItemCount.InvokeFunc(itemId, retainerId, (uint)InventoryType.RetainerCrystals);
-        }
-
-        return 0;
+        return _itemCountIpc.InvokeFunc(itemId, retainerId, 10000)
+             + _itemCountIpc.InvokeFunc(itemId, retainerId, 10001)
+             + _itemCountIpc.InvokeFunc(itemId, retainerId, 10002)
+             + _itemCountIpc.InvokeFunc(itemId, retainerId, 10003)
+             + _itemCountIpc.InvokeFunc(itemId, retainerId, 10004)
+             + _itemCountIpc.InvokeFunc(itemId, retainerId, 10005)
+             + _itemCountIpc.InvokeFunc(itemId, retainerId, 10006)
+             + _itemCountIpc.InvokeFunc(itemId, retainerId, (uint)InventoryType.RetainerCrystals);
     }
 
     public static unsafe int GetRetainerItemCount(uint itemId, bool tryCache = true)
     {
-        if (ATools)
+        if (!ATools) return 0;
+        if (!PluginService.ClientState.IsLoggedIn || PluginService.Condition[ConditionFlag.OnFreeTrial])
+            return 0;
+
+        try
         {
-            if (!PluginService.ClientState.IsLoggedIn || PluginService.Condition[ConditionFlag.OnFreeTrial]) return 0;
+            if (tryCache && HasCached(itemId))
+                return GetCachedSum(itemId);
 
-            try
+            for (var i = 0u; i < 10; i++)
             {
-                if (tryCache)
+                var retainer = RetainerManager.Instance()->GetRetainerBySortedIndex(i);
+                var retainerId = retainer->RetainerId;
+                if (retainerId == 0 || !retainer->Available) continue;
+
+                if (!RetainerData.TryGetValue(retainerId, out var dict))
                 {
-                    if (RetainerData.SelectMany(x => x.Value).Any(x => x.Key == itemId))
-                    {
-                        return (int)RetainerData.Values.SelectMany(x => x.Values).Where(x => x.ItemId == itemId)
-                                                .Sum(x => x.Quantity);
-                    }
+                    dict = new Dictionary<uint, ItemInfo>();
+                    RetainerData[retainerId] = dict;
                 }
 
-                for (var i = 0; i < 10; i++)
+                if (!dict.TryGetValue(itemId, out var info))
                 {
-                    var retainer = RetainerManager.Instance()->GetRetainerBySortedIndex((uint)i);
-
-                    var retainerId = retainer->RetainerId;
-
-                    if (retainerId > 0 && retainer->Available)
-                    {
-                        if (RetainerData.TryGetValue(retainerId, out var ret))
-                        {
-                            if (ret.TryGetValue(itemId, out var item))
-                            {
-                                item.ItemId = itemId;
-                                item.Quantity = GetRetainerInventoryItem(itemId, retainerId);
-                            }
-                            else
-                            {
-                                ret.TryAdd(
-                                    itemId,
-                                    new MainWindow.ItemInfo(itemId, GetRetainerInventoryItem(itemId, retainerId)));
-                            }
-                        }
-                        else
-                        {
-                            RetainerData.TryAdd(retainerId, new Dictionary<uint, MainWindow.ItemInfo>());
-                            var newret = RetainerData[retainerId];
-                            if (newret.TryGetValue(itemId, out var item))
-                            {
-                                item.ItemId = itemId;
-                                item.Quantity = GetRetainerInventoryItem(itemId, retainerId);
-                            }
-                            else
-                            {
-                                newret.TryAdd(
-                                    itemId,
-                                    new MainWindow.ItemInfo(itemId, GetRetainerInventoryItem(itemId, retainerId)));
-                            }
-                        }
-                    }
+                    info = new ItemInfo(itemId, 0);
+                    dict[itemId] = info;
                 }
 
-                return (int)RetainerData.SelectMany(x => x.Value).Where(x => x.Key == itemId)
-                                        .Sum(x => x.Value.Quantity);
+                info.Quantity = GetRetainerInventoryItem(itemId, retainerId);
             }
-            catch (Exception)
-            {
-                return 0;
-            }
+
+            return GetCachedSum(itemId);
         }
-
-        return 0;
+        catch (Exception ex)
+        {
+            PluginService.PluginLog?.Warning($"获取雇员背包数据异常: {ex.Message}");
+            return 0;
+        }
     }
+
+    private static bool HasCached(uint itemId) =>
+        RetainerData.Values.Any(d => d.ContainsKey(itemId));
+
+    private static int GetCachedSum(uint itemId) =>
+        (int)RetainerData.Values
+            .SelectMany(d => d.Values)
+            .Where(x => x.ItemId == itemId)
+            .Sum(x => x.Quantity);
 
     public static unsafe int GetItemCountTotal(uint itemId)
     {
-        var countInRetainers = GetRetainerItemCount(itemId);
-        var inventoryManager = InventoryManager.Instance();
-        var countInBag = inventoryManager->GetInventoryItemCount(itemId);
-        var countInSaddleBag = inventoryManager->GetItemCountInContainer(itemId, InventoryType.SaddleBag1)
+        var countInRetainers   = GetRetainerItemCount(itemId);
+        var inventoryManager   = InventoryManager.Instance();
+        var countInBag         = inventoryManager->GetInventoryItemCount(itemId);
+        var countInSaddleBag   = inventoryManager->GetItemCountInContainer(itemId, InventoryType.SaddleBag1)
                                + inventoryManager->GetItemCountInContainer(itemId, InventoryType.SaddleBag2);
         return countInRetainers + countInBag + countInSaddleBag;
     }
 
     public static void Dispose()
     {
-        Initialized?.Unsubscribe(SetupIpc);
-        PluginService.ClientState.Logout -= LogoutCacheClear;
-        Initialized = null;
-        IsInitialized = null;
-        ItemCount = null;
+        _initializedEvent?.Unsubscribe(SetupIpc);
+        PluginService.ClientState.Logout -= ClearRetainerCache;
+        _initializedEvent = null;
+        _isInitialized    = null;
+        _itemCountIpc     = null;
     }
 }

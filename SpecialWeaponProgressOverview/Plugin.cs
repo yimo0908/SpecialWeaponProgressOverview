@@ -10,39 +10,37 @@ public sealed class Plugin : IDalamudPlugin
     private const string CommandName = "/pover";
 
     public readonly WindowSystem WindowSystem = new("SpecialWeaponProgressOverview");
-    private MainWindow MainWindow { get; init; }
+    private readonly MainWindow _mainWindow;
+
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
-        MainWindow = new MainWindow();
+        _mainWindow = new MainWindow();
         PluginService.Init(pluginInterface);
-        WindowSystem.AddWindow(MainWindow);
+
+        WindowSystem.AddWindow(_mainWindow);
 
         PluginService.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
             HelpMessage = "Open main page"
         });
 
-        pluginInterface.UiBuilder.Draw += DrawUi;
-        pluginInterface.UiBuilder.OpenMainUi += ToggleMainWindow;
+        pluginInterface.UiBuilder.Draw         += DrawUi;
+        pluginInterface.UiBuilder.OpenMainUi   += ToggleMainWindow;
+
         MainWindow.Init();
-        MainWindow.InitChart();
+        _mainWindow.InitChart();
     }
 
     public void Dispose()
     {
         WindowSystem.RemoveAllWindows();
-        MainWindow.Dispose();
-
+        _mainWindow.Dispose();
         PluginService.CommandManager.RemoveHandler(CommandName);
     }
 
-    private void OnCommand(string command, string args)
-    {
-        ToggleMainWindow();
-    }
+    private void OnCommand(string command, string args) => ToggleMainWindow();
 
     private void DrawUi() => WindowSystem.Draw();
 
-    public void ToggleMainWindow() => MainWindow.Toggle();
-
+    private void ToggleMainWindow() => _mainWindow.Toggle();
 }
