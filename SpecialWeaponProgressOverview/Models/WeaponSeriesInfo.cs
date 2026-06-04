@@ -146,7 +146,7 @@ public sealed class WeaponSeriesInfo
         JobCount     = 21,
         JobIdList    = DataBase.UltimateWeaponJobIdList,
         WeaponIdStages = DataBase.UltimateWeaponId,
-        PhaseNames   = ["绝巴哈", "绝神兵", "绝亚", "绝龙诗", "绝欧米茄", "绝伊甸"],
+        PhaseNames   = ["绝巴哈", "绝神兵", "绝亚", "绝龙诗", "绝欧米茄", "绝伊甸", "绝妖星"],
     };
 
     /// <summary>按枚举索引的快速查找表。</summary>

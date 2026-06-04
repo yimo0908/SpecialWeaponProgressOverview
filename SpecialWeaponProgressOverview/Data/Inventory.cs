@@ -23,6 +23,12 @@ public static class Inventory
 
     internal static void Init()
     {
+        if (!AToolsInstalled)
+        {
+            PluginService.PluginLog?.Debug("Allagan Tools 未安装，跳过 IPC 初始化");
+            return;
+        }
+
         _initializedEvent = PluginService.PluginInterface.GetIpcSubscriber<bool, bool>("AllaganTools.Initialized");
         _isInitialized    = PluginService.PluginInterface.GetIpcSubscriber<bool>("AllaganTools.IsInitialized");
         _initializedEvent.Subscribe(SetupIpc);

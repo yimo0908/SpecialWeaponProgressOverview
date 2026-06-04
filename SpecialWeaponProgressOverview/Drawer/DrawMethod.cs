@@ -1,9 +1,12 @@
+using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Reflection;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Interface.Textures;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using SpecialWeaponProgressOverview.Base;
@@ -19,6 +22,35 @@ public static class DrawMethod
         var itemName = ItemSheet.GetRow(itemId).Name.ExtractText();
         ImGui.SetClipboardText(itemName);
     }
+
+    private static object GetTextureHandle(object wrap)
+    {
+        if (wrap == null) return IntPtr.Zero;
+
+        var t = wrap.GetType();
+
+        // Try common property names
+        foreach (var name in new[] { "ImGuiHandle", "NativePtr", "NativePointer", "Native", "TextureId", "Handle", "Id" })
+        {
+            var prop = t.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (prop != null)
+            {
+                var v = prop.GetValue(wrap);
+                if (v != null) return v;
+            }
+        }
+
+        // Try fields
+        foreach (var f in t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+        {
+            var fv = f.GetValue(wrap);
+            if (fv != null) return fv;
+        }
+
+        return IntPtr.Zero;
+    }
+
+
     
     private static void PrintItemPayload(uint itemId)
     {
@@ -45,14 +77,22 @@ public static class DrawMethod
     
     public static void DrawWeaponCell(int count, uint itemId)
     {
-        Vector4 color = count > 0 ? new(0, 1, 0, 1) : new(0.5f, 0.5f, 0.5f, 1);
-        var displayText = count > 0 ? "●" : "◯";
-        ImGui.TextColored(color, displayText);
+        var itemRow = ItemSheet.GetRow(itemId);
+        var iconId = itemRow.Icon;
+        var texture = PluginService.TextureProvider.GetFromGameIcon(new GameIconLookup(iconId)).GetWrapOrEmpty();
+
+        var iconSize = new Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight());
+        var tintColor = count > 0
+            ? new Vector4(1, 1, 1, 1)
+            : new Vector4(0.35f, 0.35f, 0.35f, 1);
+
+        var handle = GetTextureHandle(texture);
+        ImGui.Image((dynamic)handle, iconSize, Vector2.Zero, Vector2.One, tintColor, Vector4.Zero);
 
         if (ImGui.IsItemHovered())
         {
             ImGui.BeginTooltip();
-            ImGui.TextColored(color, ItemSheet.GetRow(itemId).Name.ToString());
+            ImGui.TextColored(tintColor, itemRow.Name.ToString());
             ImGui.EndTooltip();
         }
 

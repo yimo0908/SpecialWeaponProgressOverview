@@ -15,6 +15,7 @@ public class PluginService
     [PluginService] public static IObjectTable              ObjectTable     { get; set; } = null!;
     [PluginService] public static IClientState              ClientState     { get; set; } = null!;
     [PluginService] public static ICondition                Condition       { get; set; } = null!;
+    [PluginService] public static ITextureProvider           TextureProvider { get; set; } = null!;
 
     private static bool _isInitialized;
 

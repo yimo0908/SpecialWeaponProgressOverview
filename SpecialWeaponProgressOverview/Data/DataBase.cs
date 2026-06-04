@@ -107,6 +107,8 @@ public static class DataBase
             39178, 39179, 39180, 39181, 39182, 43642, 43663
         ],                                                         //欧米茄
         Enumerable.Range(44721, 21).Select(i => (uint)i).ToList(), //伊甸
+        Enumerable.Range(52299, 21).Select(i => (uint)i).ToList(), //妖星
+
     ];
 
     // Job ID
