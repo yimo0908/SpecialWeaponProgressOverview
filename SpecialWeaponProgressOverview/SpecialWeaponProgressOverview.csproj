@@ -5,6 +5,10 @@
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Content Include="ProgressComments.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <Target Name="PackagePlugin" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
     <DalamudPackager
       ProjectDir="$(ProjectDir)"

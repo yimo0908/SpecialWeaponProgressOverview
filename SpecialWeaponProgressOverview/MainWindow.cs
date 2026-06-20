@@ -21,6 +21,8 @@ public class MainWindow : Window, IDisposable
     private readonly Dictionary<WeaponSeries, WeaponSeriesDrawer>         _drawers      = new();
     private int  _selectedWeaponSeriesIndex;
     private bool _needsRefresh = true;
+    private bool _needsNewComment = true;
+    private string _currentComment = "";
 
     public MainWindow()
         : base("SpecialWeaponProgressOverview", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -30,6 +32,11 @@ public class MainWindow : Window, IDisposable
             MinimumSize = new Vector2(375, 330),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
         };
+    }
+
+    public override void OnOpen()
+    {
+        _needsNewComment = true;
     }
 
     internal static void Init()
@@ -271,16 +278,12 @@ public class MainWindow : Window, IDisposable
             : new Vector4((float)(1.0 - overallProgress), (float)overallProgress, 0f, 1f);
         ImGui.TextColored(totalColor, $"总进度: {totalOwned} / {totalPossible}（{overallPct}%）");
 
-        var comment = overallPct switch
+        if (_needsNewComment)
         {
-            100 => "全武器制霸！你是光战的荣光，是艾欧泽亚的传说！",
-            < 20 => "还在海都挂机呢？你这进度连莫古力都看不下去了。",
-            < 40 => "肝了一周就这点？你怕不是把时间都花在幻化上了。",
-            < 60 => "半桶水晃荡，你这肝度在艾欧泽亚排不上号。",
-            < 80 => "哟，还真让你刷了不少，看来最近没少熬夜。",
-            _    => "光之跑腿终于要熬出头了？建议检查一下肝脏健康。",
-        };
-        ImGui.TextColored(totalColor, comment);
+            _currentComment = ProgressComments.GetRandomComment(overallPct);
+            _needsNewComment = false;
+        }
+        ImGui.TextColored(totalColor, _currentComment);
 
         ImGui.SetWindowFontScale(1.0f);
 
