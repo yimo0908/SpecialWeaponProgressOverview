@@ -5,3 +5,4 @@ bin/
 *.user
 /.reasonix
 /.codegraph
+reasonix.toml
