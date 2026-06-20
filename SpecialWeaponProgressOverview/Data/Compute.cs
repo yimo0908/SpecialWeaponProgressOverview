@@ -20,53 +20,126 @@ public static class Compute
         List<uint>       jobIdList,
         Func<uint, int>  getItemCountTotal)
     {
-        var jobCount   = jobIdList.Count;
         var stageCount = weaponIdStages.Count;
+        var needs      = ComputeStageNeeds(weaponIdStages, jobIdList, getItemCountTotal);
 
-        // 初始化进度矩阵
-        var weaponNeed = new Dictionary<uint, List<int>>();
-        for (var i = 0; i < jobCount; i++)
-            weaponNeed[jobIdList[i]] = Enumerable.Repeat(0, stageCount).ToList();
-
-        // 扫描已持有武器，标记进度
-        for (var i = 0; i < jobCount; i++)
+        var recipes = DataBase.BozjaMaterialRecipes;
+        var totalNeeded = new Dictionary<uint, int>();
+        for (var stage = 0; stage < stageCount; stage++)
         {
-            var curJobId = jobIdList[i];
-            for (var j = 0; j < stageCount; j++)
+            foreach (var (itemId, count) in recipes[stage])
             {
-                if (getItemCountTotal(weaponIdStages[j][i]) > 0)
-                    AddOneToFollowing(weaponNeed[curJobId], j);
+                totalNeeded.TryGetValue(itemId, out var existing);
+                totalNeeded[itemId] = existing + needs[stage] * count;
             }
         }
 
-        // 汇总需求
-        var needs    = Enumerable.Repeat(0, stageCount).ToList();
-        foreach (var jobId in jobIdList)
-        {
-            for (var i = 0; i < stageCount; i++)
-                needs[i] += weaponNeed[jobId][i];
-        }
+        var materialIds = totalNeeded.Keys.ToList();
+        var neededList  = materialIds.Select(id => totalNeeded[id]).ToList();
+        var haveList    = materialIds.Select(id => getItemCountTotal(id)).ToList();
 
-        // 义武材料倍数
-        needs[0] *= 4;
-        needs[1] *= 20;
-        needs[2] *= 6;
-        needs[3] *= 15;
-        needs[4] *= 15;
-        needs[5] *= 15;
-
-        // 阶段 → 实际材料映射
-        var expandedNeeds = new List<int>   { needs[0], needs[1], needs[1], needs[1], needs[2], needs[3], needs[4], needs[5] };
-        var materialIds   = new List<uint>  { 30273u, 31573u, 31574u, 31575u, 31576u, 32956u, 32959u, 33767u };
-
-        var have = materialIds.Select(id => getItemCountTotal(id)).ToList();
-
-        return BuildMaterialString("需要", expandedNeeds, materialIds)
-             + BuildMaterialString("仍需", SubtractLists(expandedNeeds, have), materialIds);
+        return BuildMaterialString("需要", neededList, materialIds)
+             + BuildMaterialString("仍需", SubtractLists(neededList, haveList), materialIds);
     }
 
     /// <summary>计算曼德维尔武器所需材料（陨石系列 + 诗学）。</summary>
     public static string ComputeNeedsMandervillous(
+        List<List<uint>> weaponIdStages,
+        List<uint>       jobIdList,
+        Func<uint, int>  getItemCountTotal)
+    {
+        var stageCount = weaponIdStages.Count;
+        var needs      = ComputeStageNeeds(weaponIdStages, jobIdList, getItemCountTotal);
+
+        var recipes = DataBase.MandervillousMaterialRecipes;
+        var totalNeeded = new Dictionary<uint, int>();
+        for (var stage = 0; stage < stageCount; stage++)
+        {
+            foreach (var (itemId, count) in recipes[stage])
+            {
+                totalNeeded.TryGetValue(itemId, out var existing);
+                totalNeeded[itemId] = existing + needs[stage] * count;
+            }
+        }
+
+        var materialIds = totalNeeded.Keys.ToList();
+        var neededList  = materialIds.Select(id => totalNeeded[id]).ToList();
+        var haveList    = materialIds.Select(id => getItemCountTotal(id)).ToList();
+        var missingList = SubtractLists(neededList, haveList);
+
+        var totalPoetics = needs.Sum() * 1500;  // 每阶段 ×3 材料 ×500 诗学
+
+        return BuildMaterialString("需要", neededList, materialIds)
+             + BuildMaterialString("仍需", missingList, materialIds)
+             + $"共计: {totalPoetics}诗学神典石";
+    }
+
+    /// <summary>计算幻境武器所需材料。</summary>
+    public static string ComputeNeedsPhantom(
+        List<List<uint>> weaponIdStages,
+        List<uint>       jobIdList,
+        Func<uint, int>  getItemCountTotal)
+    {
+        var stageCount = weaponIdStages.Count;
+        var needs      = ComputeStageNeeds(weaponIdStages, jobIdList, getItemCountTotal);
+
+        var recipes     = DataBase.PhantomMaterialRecipes;
+        var totalNeeded = new Dictionary<uint, int>();
+        for (var stage = 0; stage < stageCount; stage++)
+        {
+            foreach (var (itemId, count) in recipes[stage])
+            {
+                totalNeeded.TryGetValue(itemId, out var existing);
+                totalNeeded[itemId] = existing + needs[stage] * count;
+            }
+        }
+
+        var materialIds = totalNeeded.Keys.ToList();
+        var neededList  = materialIds.Select(id => totalNeeded[id]).ToList();
+        var haveList    = materialIds.Select(id => getItemCountTotal(id)).ToList();
+        var missingList = SubtractLists(neededList, haveList);
+
+        var totalPoetics = missingList.Sum() * 500;  // 每个材料 ×500 数理神典石
+
+        return BuildMaterialString("需要", neededList, materialIds)
+             + BuildMaterialString("仍需", missingList, materialIds)
+             + $"共计: {totalPoetics}数理神典石";
+    }
+
+    /// <summary>计算优武所需材料。</summary>
+    public static string ComputeNeedsEureka(
+        List<List<uint>> weaponIdStages,
+        List<uint>       jobIdList,
+        Func<uint, int>  getItemCountTotal)
+    {
+        var stageCount = weaponIdStages.Count;
+        var needs      = ComputeStageNeeds(weaponIdStages, jobIdList, getItemCountTotal);
+
+        // 按材料种类聚合（同一种材料出现在多个阶段时合并）
+        var recipes = DataBase.EurekaMaterialRecipes;
+        var totalNeeded = new Dictionary<uint, int>();
+        for (var stage = 0; stage < stageCount; stage++)
+        {
+            foreach (var (itemId, count) in recipes[stage])
+            {
+                totalNeeded.TryGetValue(itemId, out var existing);
+                totalNeeded[itemId] = existing + needs[stage] * count;
+            }
+        }
+
+        var materialIds = totalNeeded.Keys.ToList();
+        var neededList  = materialIds.Select(id => totalNeeded[id]).ToList();
+        var haveList    = materialIds.Select(id => getItemCountTotal(id)).ToList();
+
+        return BuildMaterialString("需要", neededList, materialIds)
+             + BuildMaterialString("仍需", SubtractLists(neededList, haveList), materialIds);
+    }
+
+    // ---- 工具方法 ----
+
+    /// <summary>扫描武器进度，返回各阶段仍需攻克的职业数。
+    /// 不持有任意阶段武器的职业视为需要从阶段 0 开始。</summary>
+    private static List<int> ComputeStageNeeds(
         List<List<uint>> weaponIdStages,
         List<uint>       jobIdList,
         Func<uint, int>  getItemCountTotal)
@@ -81,10 +154,22 @@ public static class Compute
         for (var i = 0; i < jobCount; i++)
         {
             var curJobId = jobIdList[i];
+            var hasAny   = false;
+
             for (var j = 0; j < stageCount; j++)
             {
                 if (getItemCountTotal(weaponIdStages[j][i]) > 0)
+                {
+                    hasAny = true;
                     AddOneToFollowing(weaponNeed[curJobId], j);
+                }
+            }
+
+            // 该职业没有任何阶段的武器 → 需要从阶段 0 开始全部推进
+            if (!hasAny)
+            {
+                for (var j = 0; j < stageCount; j++)
+                    weaponNeed[curJobId][j] = 1;
             }
         }
 
@@ -92,82 +177,11 @@ public static class Compute
         foreach (var jobId in jobIdList)
         {
             for (var i = 0; i < stageCount; i++)
-                needs[i] += 3 * weaponNeed[jobId][i];
+                needs[i] += weaponNeed[jobId][i];
         }
 
-        var have = new List<int>
-        {
-            getItemCountTotal(38420u),  // 稀少陨石
-            getItemCountTotal(38940u),  // 稀少球粒陨石
-            getItemCountTotal(40322u),  // 稀少无球粒陨石
-            getItemCountTotal(41032u),  // 雏晶
-        };
-
-        var missing = SubtractLists(needs, have);
-        var total   = (needs[0] + needs[1] + needs[2] + needs[3]) * 500;
-
-        return $"需要: {needs[0]}个稀少陨石, {needs[1]}个稀少球粒陨石, {needs[2]}个稀少无球粒陨石, {needs[3]}个雏晶\n"
-             + $"仍需: {missing[0]}个稀少陨石, {missing[1]}个稀少球粒陨石, {missing[2]}个稀少无球粒陨石, {missing[3]}个雏晶\n"
-             + $"共计: {total}诗学神典石";
+        return needs;
     }
-
-    /// <summary>计算幻境武器所需材料。</summary>
-    public static string ComputeNeedsPhantom(
-        Dictionary<uint, List<int>> phantomWeaponProcess,
-        List<uint>                  jobIdList,
-        Func<uint, int>             getItemCountTotal,
-        List<uint>?                 materialItemIds    = null,
-        List<int>?                  requiredPerPhase   = null)
-    {
-        materialItemIds  ??= [47750u, 46850u, 50058u];
-        requiredPerPhase ??= [3, 3, 3];
-
-        var n     = Math.Min(materialItemIds.Count, requiredPerPhase.Count);
-        var needs = Enumerable.Repeat(0, n).ToList();
-        var have  = materialItemIds.Take(n).Select(id => getItemCountTotal(id)).ToList();
-
-        foreach (var jobId in jobIdList)
-        {
-            if (!phantomWeaponProcess.TryGetValue(jobId, out var process))
-                process = [];
-
-            for (var p = 0; p < n; p++)
-            {
-                var curVal = p < process.Count ? process[p] : 0;
-                if (curVal > 0) continue;
-
-                // 如果后面阶段已有，则无需此阶段材料
-                var laterOwned = false;
-                for (var q = p + 1; q < n; q++)
-                {
-                    var qVal = q < process.Count ? process[q] : 0;
-                    if (qVal > 0) { laterOwned = true; break; }
-                }
-
-                if (!laterOwned)
-                    needs[p] += requiredPerPhase[p];
-            }
-        }
-
-        var needParts   = new List<string>();
-        var remainParts = new List<string>();
-        for (var i = 0; i < n; i++)
-        {
-            var name    = ItemSheet.GetRow(materialItemIds[i]).Name.ExtractText();
-            needParts.Add($"{needs[i]}个{name}");
-            var remaining = Math.Max(0, needs[i] - have[i]);
-            remainParts.Add($"{remaining}个{name}");
-        }
-
-        var totalMissing = Enumerable.Range(0, n).Sum(i => Math.Max(0, needs[i] - have[i]));
-        var totalCost    = totalMissing * 500;
-
-        return $"需要: {string.Join(", ", needParts)}\n"
-             + $"仍需: {string.Join(", ", remainParts)}\n"
-             + $"共计: {totalCost}天道神典石";
-    }
-
-    // ---- 工具方法 ----
 
     private static void AddOneToFollowing(List<int> array, int currentIndex)
     {

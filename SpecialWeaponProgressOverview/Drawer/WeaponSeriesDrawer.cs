@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
@@ -74,7 +75,12 @@ public class WeaponSeriesDrawer
                     continue;
                 }
                 var itemId = info.WeaponIdStages[j][jobIndex];
-                DrawMethod.DrawWeaponCell(line[j], itemId);
+                var nameColor = info.Series != WeaponSeries.Ultimate
+                                && j == line.Count - 1
+                                && line[j] > 0
+                    ? new Vector4(0.2f, 1f, 0.2f, 1f)
+                    : (Vector4?)null;
+                DrawMethod.DrawWeaponCell(line[j], itemId, nameColor);
             }
         }
 
@@ -93,7 +99,9 @@ public class WeaponSeriesDrawer
             WeaponSeries.Mandervillous => Compute.ComputeNeedsMandervillous(
                 info.WeaponIdStages, info.JobIdList, id => _getItemCountTotal(id)),
             WeaponSeries.Phantom       => Compute.ComputeNeedsPhantom(
-                _process, info.JobIdList, id => _getItemCountTotal(id)),
+                info.WeaponIdStages, info.JobIdList, id => _getItemCountTotal(id)),
+            WeaponSeries.Eureka        => Compute.ComputeNeedsEureka(
+                info.WeaponIdStages, info.JobIdList, id => _getItemCountTotal(id)),
             _                          => null,
         };
     }

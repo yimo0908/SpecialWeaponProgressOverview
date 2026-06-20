@@ -74,6 +74,7 @@ public sealed class WeaponSeriesInfo
         PhaseNames   = ["禁地兵装", "禁地兵装+1", "禁地兵装+2", "常风", "恒冰", "恒冰+1",
                         "元素", "元素+1", "元素+2", "涌火", "丰水", "丰水+1",
                         "新兵装", "优雷卡", "优雷卡·改"],
+        HasMaterialComputation = true,
     };
 
     public static readonly WeaponSeriesInfo Bozja = new()
@@ -164,11 +165,11 @@ public sealed class WeaponSeriesInfo
             [WeaponSeries.Ultimate]      = Ultimate,
         };
 
-    /// <summary>下拉列表显示名称（含"未选中"）。</summary>
-    public static readonly string[] ComboNames =
-        ["未选中", "古武", "魂武", "优武", "义武", "曼武", "幻武", "天钢", "莫雯", "绝境战"];
+    /// <summary>横向 Tab 显示名称（含"总览"）。</summary>
+    public static readonly string[] TabNames =
+        ["总览", "古武", "魂武", "优武", "义武", "曼武", "幻武", "天钢", "莫雯", "绝境战"];
 
-    /// <summary>下拉列表索引 → 枚举。</summary>
+    /// <summary>Tab 索引 → 枚举。</summary>
     public static WeaponSeries FromComboIndex(int index) => index switch
     {
         1 => WeaponSeries.Zodiac,

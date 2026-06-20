@@ -75,7 +75,7 @@ public static class DrawMethod
         PluginService.ChatGui.Print(new XivChatEntry { Message = fullMessage });
     }
     
-    public static void DrawWeaponCell(int count, uint itemId)
+    public static void DrawWeaponCell(int count, uint itemId, Vector4? nameColor = null)
     {
         var itemRow = ItemSheet.GetRow(itemId);
         var iconId = itemRow.Icon;
@@ -88,13 +88,8 @@ public static class DrawMethod
 
         var handle = GetTextureHandle(texture);
         ImGui.Image((dynamic)handle, iconSize, Vector2.Zero, Vector2.One, tintColor, Vector4.Zero);
-
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.BeginTooltip();
-            ImGui.TextColored(tintColor, itemRow.Name.ToString());
-            ImGui.EndTooltip();
-        }
+        ImGui.SameLine();
+        ImGui.TextColored(nameColor ?? tintColor, itemRow.Name.ExtractText());
 
         if (ImGui.IsItemClicked())
         {
@@ -102,4 +97,5 @@ public static class DrawMethod
             PrintItemPayload(itemId);
         }
     }
+
 }
