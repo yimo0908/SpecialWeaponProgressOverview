@@ -19,9 +19,23 @@ public static class Inventory
     private static ICallGateSubscriber<bool, bool>?              _initializedEvent;
     private static ICallGateSubscriber<bool>?                    _isInitialized;
 
-    public static bool AToolsInstalled =>
-        PluginService.PluginInterface.InstalledPlugins.Any(
-            x => x.InternalName is "Allagan Tools" or "InventoryTools");
+    private static bool _aToolsInstalled;
+    private static bool _aToolsInstalledChecked;
+
+    /// <summary>物品总数缓存：itemId → 全雇员合计数量。RefreshCache 时预计算。</summary>
+    private static readonly Dictionary<uint, int> _itemTotalCache = new();
+
+    public static bool AToolsInstalled
+    {
+        get
+        {
+            if (_aToolsInstalledChecked) return _aToolsInstalled;
+            _aToolsInstalled = PluginService.PluginInterface.InstalledPlugins.Any(
+                x => x.InternalName is "Allagan Tools" or "InventoryTools");
+            _aToolsInstalledChecked = true;
+            return _aToolsInstalled;
+        }
+    }
 
     public static bool ATools
     {
@@ -68,9 +82,32 @@ public static class Inventory
         }
     }
 
+    /// <summary>确保 AT.IPC 已连接。处理 AT 在本插件之后加载、Initialized 事件未触发的情况。</summary>
+    private static void EnsureIpcConnected()
+    {
+        if (_itemCountIpc != null) return;
+        if (!AToolsInstalled) return;
+
+        try
+        {
+            _isInitialized ??= PluginService.PluginInterface.GetIpcSubscriber<bool>("AllaganTools.IsInitialized");
+            if (_isInitialized.InvokeFunc())
+            {
+                SetupIpc(true);
+                PluginService.PluginLog.Debug("延迟连接 AT.IPC 成功");
+            }
+        }
+        catch (IpcNotReadyError)
+        {
+            // AT IPC 仍未就绪
+        }
+    }
+
     /// <summary>清空并重新从 AT.IPC 拉取所有武器及材料数据到本地缓存，缓存后页面只读缓存不再调用 IPC。</summary>
     public static unsafe void RefreshCache()
     {
+        EnsureIpcConnected();
+
         if (!ATools || _itemCountIpc == null)
         {
             PluginService.PluginLog.Debug("AT.IPC 未就绪，跳过刷新");
@@ -81,6 +118,7 @@ public static class Inventory
             return;
 
         RetainerData.Clear();
+        _itemTotalCache.Clear();
         DataCached = false;
 
         // 收集所有需要缓存的物品 ID（武器 + 材料）
@@ -94,38 +132,15 @@ public static class Inventory
             }
         }
 
-        // 义武材料
-        allItemIds.Add(30273);
-        allItemIds.Add(31573);
-        allItemIds.Add(31574);
-        allItemIds.Add(31575);
-        allItemIds.Add(31576);
-        allItemIds.Add(32956);
-        allItemIds.Add(32959);
-        allItemIds.Add(33767);
-
-        // 曼武材料
-        allItemIds.Add(38420);
-        allItemIds.Add(38940);
-        allItemIds.Add(40322);
-        allItemIds.Add(41032);
-
-        // 幻武材料
-        allItemIds.Add(47750);
-        allItemIds.Add(46850);
-        allItemIds.Add(50058);
-
-        // 优武材料
-        allItemIds.Add(21801);  // 乱属性水晶
-        allItemIds.Add(21802);  // 帕祖祖的羽毛
-        allItemIds.Add(23309);  // 结冰乱属性水晶
-        allItemIds.Add(22975);  // 娄希的冰片
-        allItemIds.Add(22976);  // 恒冰水晶
-        allItemIds.Add(24123);  // 彭忒西勒亚的火种
-        allItemIds.Add(24124);  // 涌火水晶
-        allItemIds.Add(24806);  // 水晶龙之鳞
-        allItemIds.Add(24807);  // 丰水水晶
-        allItemIds.Add(24808);  // 优雷卡的断片
+        // 从配方表自动收集所有材料 ID，避免与 DataBase 重复维护
+        foreach (var recipe in DataBase.BozjaMaterialRecipes
+                     .Concat(DataBase.MandervillousMaterialRecipes)
+                     .Concat(DataBase.PhantomMaterialRecipes)
+                     .Concat(DataBase.EurekaMaterialRecipes)
+                     .SelectMany(stage => stage))
+        {
+            allItemIds.Add(recipe.ItemId);
+        }
 
         // 先遍历雇员，再遍历物品：每个雇员一次性查询所有物品
         for (var i = 0u; i < 10; i++)
@@ -148,6 +163,14 @@ public static class Inventory
             }
         }
 
+        // 预计算每个物品的全雇员合计数量，后续查询直接读缓存
+        foreach (var dict in RetainerData.Values)
+            foreach (var info in dict.Values)
+            {
+                _itemTotalCache.TryGetValue(info.ItemId, out var existing);
+                _itemTotalCache[info.ItemId] = existing + (int)info.Quantity;
+            }
+
         DataCached = true;
         PluginService.PluginLog.Debug(
             $"AT.IPC 缓存刷新完成：{RetainerData.Count} 个雇员，{allItemIds.Count} 个物品");
@@ -156,6 +179,7 @@ public static class Inventory
     private static void ClearRetainerCache(int _, int __)
     {
         RetainerData.Clear();
+        _itemTotalCache.Clear();
         DataCached = false;
     }
 
@@ -181,8 +205,10 @@ public static class Inventory
              + _itemCountIpc.InvokeFunc(itemId, retainerId, (uint)InventoryType.RetainerCrystals);
     }
 
-    public static unsafe int GetRetainerItemCount(uint itemId, bool tryCache = true)
+    public static unsafe int GetRetainerItemCount(uint itemId)
     {
+        EnsureIpcConnected();
+
         if (!ATools) return 0;
         if (!PluginService.ClientState.IsLoggedIn || PluginService.Condition[ConditionFlag.OnFreeTrial])
             return 0;
@@ -193,7 +219,7 @@ public static class Inventory
 
         try
         {
-            if (tryCache && HasCached(itemId))
+            if (HasCached(itemId))
                 return GetCachedSum(itemId);
 
             for (var i = 0u; i < 10; i++)
@@ -217,7 +243,13 @@ public static class Inventory
                 info.Quantity = GetRetainerInventoryItem(itemId, retainerId);
             }
 
-            return GetCachedSum(itemId);
+            // 重新计算该物品的全雇员合计并缓存
+            var sum = 0;
+            foreach (var dict in RetainerData.Values)
+                if (dict.TryGetValue(itemId, out var info2))
+                    sum += (int)info2.Quantity;
+            _itemTotalCache[itemId] = sum;
+            return sum;
         }
         catch (Exception ex)
         {
@@ -227,13 +259,10 @@ public static class Inventory
     }
 
     private static bool HasCached(uint itemId) =>
-        RetainerData.Values.Any(d => d.ContainsKey(itemId));
+        _itemTotalCache.ContainsKey(itemId);
 
     private static int GetCachedSum(uint itemId) =>
-        (int)RetainerData.Values
-            .SelectMany(d => d.Values)
-            .Where(x => x.ItemId == itemId)
-            .Sum(x => x.Quantity);
+        _itemTotalCache.TryGetValue(itemId, out var total) ? total : 0;
 
     public static unsafe int GetItemCountTotal(uint itemId)
     {
@@ -252,5 +281,6 @@ public static class Inventory
         _initializedEvent = null;
         _isInitialized    = null;
         _itemCountIpc     = null;
+        _aToolsInstalledChecked = false;
     }
 }

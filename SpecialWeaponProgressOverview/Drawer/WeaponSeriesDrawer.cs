@@ -16,6 +16,9 @@ public class WeaponSeriesDrawer
     private static readonly ExcelSheet<ClassJob> ClassJobSheet =
         PluginService.DataManager.GetExcelSheet<ClassJob>();
 
+    /// <summary>职业名称缓存，避免每帧重复查表。</summary>
+    private static readonly Dictionary<uint, string> _jobNameCache = new();
+
     private readonly WeaponSeriesInfo                     _seriesInfo;
     private readonly Dictionary<uint, List<int>>          _process;
     private readonly Func<uint, int>?                     _getItemCountTotal;
@@ -29,9 +32,6 @@ public class WeaponSeriesDrawer
         _process            = process;
         _getItemCountTotal  = getItemCountTotal;
     }
-
-    /// <summary>子类可重写以绘制材料需求计算文本。</summary>
-    protected virtual string? GetMaterialSummary() => null;
 
     public void Draw()
     {
@@ -61,7 +61,7 @@ public class WeaponSeriesDrawer
 
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
-            ImGui.Text(ClassJobSheet.GetRow(jobId).Name.ExtractText());
+            ImGui.Text(GetJobName(jobId));
 
             for (var j = 0; j < line.Count; j++)
             {
@@ -87,6 +87,17 @@ public class WeaponSeriesDrawer
         ImGui.EndTable();
     }
 
+    /// <summary>获取职业名称（带缓存）。</summary>
+    private static string GetJobName(uint jobId)
+    {
+        if (_jobNameCache.TryGetValue(jobId, out var name))
+            return name;
+
+        name = ClassJobSheet.GetRow(jobId).Name.ExtractText();
+        _jobNameCache[jobId] = name;
+        return name;
+    }
+
     private string? ComputeMaterialNeeds()
     {
         var info = _seriesInfo;
@@ -94,14 +105,10 @@ public class WeaponSeriesDrawer
 
         return info.Series switch
         {
-            WeaponSeries.Bozja         => Compute.ComputeNeedsBozja(
-                info.WeaponIdStages, info.JobIdList, id => _getItemCountTotal(id)),
-            WeaponSeries.Mandervillous => Compute.ComputeNeedsMandervillous(
-                info.WeaponIdStages, info.JobIdList, id => _getItemCountTotal(id)),
-            WeaponSeries.Phantom       => Compute.ComputeNeedsPhantom(
-                info.WeaponIdStages, info.JobIdList, id => _getItemCountTotal(id)),
-            WeaponSeries.Eureka        => Compute.ComputeNeedsEureka(
-                info.WeaponIdStages, info.JobIdList, id => _getItemCountTotal(id)),
+            WeaponSeries.Bozja         => Compute.ComputeNeedsBozja(info, _getItemCountTotal),
+            WeaponSeries.Mandervillous => Compute.ComputeNeedsMandervillous(info, _getItemCountTotal),
+            WeaponSeries.Phantom       => Compute.ComputeNeedsPhantom(info, _getItemCountTotal),
+            WeaponSeries.Eureka        => Compute.ComputeNeedsEureka(info, _getItemCountTotal),
             _                          => null,
         };
     }

@@ -53,9 +53,4 @@ public static class ProgressComments
 
         return "";
     }
-
-    public static void Reload()
-    {
-        _cache = null;
-    }
 }

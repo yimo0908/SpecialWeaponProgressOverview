@@ -12,7 +12,6 @@ public sealed class WeaponSeriesInfo
     public WeaponSeries Series            { get; init; }
     public string       DisplayName       { get; init; } = string.Empty;
     public string       ChineseName       { get; init; } = string.Empty;
-    public int          JobCount          { get; init; }
     public List<uint>   JobIdList         { get; init; } = [];
     public List<List<uint>> WeaponIdStages  { get; init; } = [];
     public List<string>     PhaseNames      { get; init; } = [];
@@ -44,7 +43,6 @@ public sealed class WeaponSeriesInfo
         Series       = WeaponSeries.Zodiac,
         DisplayName  = "Zodiac",
         ChineseName  = "古武",
-        JobCount     = 10,
         JobIdList    = DataBase.ZodiacWeaponJobIdList,
         WeaponIdStages = DataBase.ZodiacWeaponId,
         PhaseNames   = ["半成品", "本体", "天极", "魂晶", "魂灵", "新星", "镇魂", "黄道武器", "黄道武器·本我"],
@@ -56,7 +54,6 @@ public sealed class WeaponSeriesInfo
         Series       = WeaponSeries.Anima,
         DisplayName  = "Anima",
         ChineseName  = "魂武",
-        JobCount     = 13,
         JobIdList    = DataBase.AnimaWeaponJobIdList,
         WeaponIdStages = DataBase.AnimaWeaponId,
         PhaseNames   = ["元灵武器·元灵", "元灵武器·觉醒", "新元灵武器", "元灵武器·超导",
@@ -68,7 +65,6 @@ public sealed class WeaponSeriesInfo
         Series       = WeaponSeries.Eureka,
         DisplayName  = "Eureka",
         ChineseName  = "优武",
-        JobCount     = 15,
         JobIdList    = DataBase.EurekaWeaponJobIdList,
         WeaponIdStages = DataBase.EurekaWeaponId,
         PhaseNames   = ["禁地兵装", "禁地兵装+1", "禁地兵装+2", "常风", "恒冰", "恒冰+1",
@@ -82,7 +78,6 @@ public sealed class WeaponSeriesInfo
         Series       = WeaponSeries.Bozja,
         DisplayName  = "Bozja",
         ChineseName  = "义武",
-        JobCount     = 17,
         JobIdList    = DataBase.BozjaWeaponJobIdList,
         WeaponIdStages = DataBase.BozjaWeaponId,
         PhaseNames   = ["义军武器", "改良型义军武器", "回忆", "裁决", "改良型裁决", "女王武器"],
@@ -94,7 +89,6 @@ public sealed class WeaponSeriesInfo
         Series       = WeaponSeries.Mandervillous,
         DisplayName  = "Mandervillous",
         ChineseName  = "曼武",
-        JobCount     = 19,
         JobIdList    = DataBase.MandervillousWeaponJobIdList,
         WeaponIdStages = DataBase.MandervillousWeaponId,
         PhaseNames   = ["曼德维尔武器", "曼德维尔武器·惊异", "曼德维尔武器·威严", "曼德维尔武器·盈满"],
@@ -106,7 +100,6 @@ public sealed class WeaponSeriesInfo
         Series       = WeaponSeries.Phantom,
         DisplayName  = "Phantom",
         ChineseName  = "幻武",
-        JobCount     = 21,
         JobIdList    = DataBase.PhantomWeaponJobIdList,
         WeaponIdStages = DataBase.PhantomWeaponId,
         PhaseNames   = ["幻境武器·半影", "幻境武器·本影", "幻境武器·黯影"],
@@ -119,7 +112,6 @@ public sealed class WeaponSeriesInfo
         Series       = WeaponSeries.Skysteel,
         DisplayName  = "Skysteel",
         ChineseName  = "天钢",
-        JobCount     = 11,
         JobIdList    = DataBase.SkysteelWeaponJobIdList,
         WeaponIdStages = DataBase.SkysteelWeaponId,
         PhaseNames   = ["天钢工具", "天钢工具+1", "龙诗工具", "改良型龙诗工具", "天诗工具", "天工工具"],
@@ -131,7 +123,6 @@ public sealed class WeaponSeriesInfo
         Series       = WeaponSeries.Splendorous,
         DisplayName  = "Splendorous",
         ChineseName  = "莫雯",
-        JobCount     = 11,
         JobIdList    = DataBase.SplendorousWeaponJobIdList,
         WeaponIdStages = DataBase.SplendorousWeaponId,
         PhaseNames   = ["卓越工具", "改良型卓越工具", "水晶工具", "乔菈水晶工具",
@@ -144,7 +135,6 @@ public sealed class WeaponSeriesInfo
         Series       = WeaponSeries.Ultimate,
         DisplayName  = "Ultimate",
         ChineseName  = "绝境战",
-        JobCount     = 21,
         JobIdList    = DataBase.UltimateWeaponJobIdList,
         WeaponIdStages = DataBase.UltimateWeaponId,
         PhaseNames   = ["绝巴哈", "绝神兵", "绝亚", "绝龙诗", "绝欧米茄", "绝伊甸", "绝妖星"],

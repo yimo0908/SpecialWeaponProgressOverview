@@ -27,7 +27,6 @@ public sealed class Plugin : IDalamudPlugin
         pluginInterface.UiBuilder.Draw         += DrawUi;
         pluginInterface.UiBuilder.OpenMainUi   += ToggleMainWindow;
 
-        MainWindow.Init();
         _mainWindow.InitChart();
     }
 

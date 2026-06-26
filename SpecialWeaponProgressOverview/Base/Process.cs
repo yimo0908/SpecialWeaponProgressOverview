@@ -19,7 +19,7 @@ public class Process
     {
         var weaponProcess = new Dictionary<uint, List<int>>();
 
-        for (var i = 0; i < info.JobCount; i++)
+        for (var i = 0; i < info.JobIdList.Count; i++)
         {
             weaponProcess.Add(
                 info.JobIdList[i],
@@ -31,12 +31,12 @@ public class Process
 
     /// <summary>获取武器进度数据，填充各职业各阶段的持有计数。</summary>
     public void GetProcessData(
-        WeaponSeriesInfo                    info,
-        ref Dictionary<uint, List<int>>     weaponProcess)
+        WeaponSeriesInfo                info,
+        Dictionary<uint, List<int>>    weaponProcess)
     {
         var stageCount = info.WeaponIdStages.Count;
 
-        for (var i = 0; i < info.JobCount; i++)
+        for (var i = 0; i < info.JobIdList.Count; i++)
         {
             var curJobId = info.JobIdList[i];
 

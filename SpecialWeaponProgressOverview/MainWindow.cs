@@ -12,9 +12,6 @@ namespace SpecialWeaponProgressOverview;
 
 public class MainWindow : Window, IDisposable
 {
-    // 向后兼容的委托类型别名
-    public delegate int ItemCountDelegate(uint itemId);
-
     private Process? _process;
 
     private readonly Dictionary<WeaponSeries, Dictionary<uint, List<int>>> _weaponProcess = new();
@@ -23,6 +20,9 @@ public class MainWindow : Window, IDisposable
     private bool _needsRefresh = true;
     private bool _needsNewComment = true;
     private string _currentComment = "";
+
+    /// <summary>总览页环形进度缓冲区，避免每帧分配。</summary>
+    private (string name, float progress, string countText)[] _phaseProgresses = [];
 
     public MainWindow()
         : base("SpecialWeaponProgressOverview", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -39,11 +39,6 @@ public class MainWindow : Window, IDisposable
         _needsNewComment = true;
     }
 
-    internal static void Init()
-    {
-        Inventory.Init();
-    }
-
     private static int GetItemCountTotal(uint itemId) => Inventory.GetItemCountTotal(itemId);
 
     public void Dispose()
@@ -54,6 +49,7 @@ public class MainWindow : Window, IDisposable
 
     public void InitChart()
     {
+        Inventory.Init();
         _process = new Process(GetItemCountTotal);
 
         foreach (var kvp in WeaponSeriesInfo.All)
@@ -73,9 +69,6 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
-        if (_process == null)
-            InitChart();
-
         var localPlayer = PluginService.ObjectTable.LocalPlayer;
         if (localPlayer is null)
         {
@@ -122,7 +115,7 @@ public class MainWindow : Window, IDisposable
                 var s   = kvp.Key;
                 var inf = kvp.Value;
                 var currentProcess  = _weaponProcess[s];
-                _process?.GetProcessData(inf, ref currentProcess);
+                _process!.GetProcessData(inf, currentProcess);
                 _weaponProcess[s] = currentProcess;
             }
 
@@ -195,7 +188,7 @@ public class MainWindow : Window, IDisposable
                     if (lastPhaseIndex < jobProcess.Count && jobProcess[lastPhaseIndex] > 0)
                         seriesOwned++;
                 }
-                seriesTotal = info.JobCount;
+                seriesTotal = info.JobIdList.Count;
             }
 
             totalOwned    += seriesOwned;
@@ -219,7 +212,8 @@ public class MainWindow : Window, IDisposable
 
                 // 收集各副本数据
                 var phaseCount = info.PhaseNames.Count;
-                var phaseProgresses = new (string name, float progress, string countText)[phaseCount];
+                if (_phaseProgresses.Length < phaseCount)
+                    _phaseProgresses = new (string name, float progress, string countText)[phaseCount];
 
                 for (var j = 0; j < phaseCount; j++)
                 {
@@ -240,7 +234,7 @@ public class MainWindow : Window, IDisposable
                     }
 
                     var p = jobsInPhase > 0 ? (float)ownedInPhase / jobsInPhase : 0f;
-                    phaseProgresses[j] = (info.PhaseNames[j], p, $"{ownedInPhase}/{jobsInPhase}");
+                    _phaseProgresses[j] = (info.PhaseNames[j], p, $"{ownedInPhase}/{jobsInPhase}");
                 }
 
                 const float cellWidth  = 145f;
@@ -248,7 +242,7 @@ public class MainWindow : Window, IDisposable
 
                 for (var j = 0; j < phaseCount; j++)
                 {
-                    var (name, p, countText) = phaseProgresses[j];
+                    var (name, p, countText) = _phaseProgresses[j];
                     DrawCircularProgress(p, name, countText, cellWidth, cellHeight);
 
                     if ((j + 1) % 7 != 0 && j < phaseCount - 1)
