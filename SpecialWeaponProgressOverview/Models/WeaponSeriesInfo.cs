@@ -20,6 +20,17 @@ public sealed class WeaponSeriesInfo
     /// <summary>是否需要材料需求计算</summary>
     public bool HasMaterialComputation  { get; init; }
 
+    /// <summary>最终阶段索引列表。为空时默认仅最后阶段为最终阶段；
+    /// 优武特例：优雷卡(index 13) 与 优雷卡·改(index 14) 均视为最终阶段。</summary>
+    public List<int> FinalStageIndices { get; init; } = [];
+
+    /// <summary>判断指定阶段是否为最终阶段。
+    /// 若 <see cref="FinalStageIndices"/> 非空则按其判断，否则取最后阶段。</summary>
+    public bool IsFinalStage(int stageIndex)
+        => FinalStageIndices.Count > 0
+            ? FinalStageIndices.Contains(stageIndex)
+            : stageIndex == WeaponIdStages.Count - 1;
+
     /// <summary>根据职业ID和阶段索引解析该职业在武器阶段列表中的索引。</summary>
     public int ResolveJobIndex(uint jobId, int stageIndex = 0)
     {
@@ -71,6 +82,8 @@ public sealed class WeaponSeriesInfo
                         "元素", "元素+1", "元素+2", "涌火", "丰水", "丰水+1",
                         "新兵装", "优雷卡", "优雷卡·改"],
         HasMaterialComputation = true,
+        // 优雷卡(13) 与 优雷卡·改(14) 均视为最终阶段
+        FinalStageIndices = [13, 14],
     };
 
     public static readonly WeaponSeriesInfo Bozja = new()

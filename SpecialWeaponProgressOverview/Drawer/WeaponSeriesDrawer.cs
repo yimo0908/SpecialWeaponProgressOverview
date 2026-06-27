@@ -75,9 +75,8 @@ public class WeaponSeriesDrawer
                     continue;
                 }
                 var itemId = info.WeaponIdStages[j][jobIndex];
-                var nameColor = info.Series != WeaponSeries.Ultimate
-                                && j == line.Count - 1
-                                && line[j] > 0
+                var nameColor = line[j] > 0
+                                && (info.Series == WeaponSeries.Ultimate || info.IsFinalStage(j))
                     ? new Vector4(0.2f, 1f, 0.2f, 1f)
                     : (Vector4?)null;
                 DrawMethod.DrawWeaponCell(line[j], itemId, nameColor);

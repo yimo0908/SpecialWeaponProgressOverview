@@ -178,15 +178,21 @@ public class MainWindow : Window, IDisposable
             }
             else
             {
-                // 其他系列：只统计最终阶段
-                var lastPhaseIndex = info.PhaseNames.Count - 1;
+                // 其他系列：统计最终阶段（优武特例：优雷卡和优雷卡·改均算最终阶段）
                 foreach (var jobId in info.JobIdList)
                 {
                     if (!currentProcess.TryGetValue(jobId, out var jobProcess))
                         continue;
 
-                    if (lastPhaseIndex < jobProcess.Count && jobProcess[lastPhaseIndex] > 0)
-                        seriesOwned++;
+                    // 只要拥有任一最终阶段武器即视为已完成
+                    for (var j = 0; j < jobProcess.Count; j++)
+                    {
+                        if (info.IsFinalStage(j) && jobProcess[j] > 0)
+                        {
+                            seriesOwned++;
+                            break;
+                        }
+                    }
                 }
                 seriesTotal = info.JobIdList.Count;
             }
