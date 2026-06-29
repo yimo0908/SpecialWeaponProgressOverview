@@ -2,6 +2,7 @@ using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using SpecialWeaponProgressOverview.Base;
+using SpecialWeaponProgressOverview.Shop;
 
 namespace SpecialWeaponProgressOverview;
 
@@ -11,11 +12,14 @@ public sealed class Plugin : IDalamudPlugin
 
     public readonly WindowSystem WindowSystem = new("SpecialWeaponProgressOverview");
     private readonly MainWindow _mainWindow;
+    private readonly ShopExchangeModifier _shopModifier;
 
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
         _mainWindow = new MainWindow();
         PluginService.Init(pluginInterface);
+
+        _shopModifier = new ShopExchangeModifier();
 
         WindowSystem.AddWindow(_mainWindow);
 
@@ -32,6 +36,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
+        _shopModifier.Dispose();
         WindowSystem.RemoveAllWindows();
         _mainWindow.Dispose();
         PluginService.CommandManager.RemoveHandler(CommandName);

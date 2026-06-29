@@ -35,8 +35,8 @@ public static class Compute
         var (materialIds, neededList, missingList) =
             ComputeMaterialNeedsCore(info, DataBase.MandervillousMaterialRecipes, getItemCountTotal);
 
-        // 每阶段 ×3 材料 ×500 诗学 = neededList.Sum() × 500
-        var totalPoetics = neededList.Sum() * 500;
+        // 每阶段 ×3 材料 ×500 诗学 = missingList.Sum() × 500
+        var totalPoetics = missingList.Sum() * 500;
 
         return BuildMaterialString("需要", neededList, materialIds)
              + BuildMaterialString("仍需", missingList, materialIds)
@@ -74,7 +74,7 @@ public static class Compute
     // ---- 核心计算逻辑 ----
 
     /// <summary>核心材料需求计算：聚合配方、对比持有量，返回材料 ID、需要量、仍需量列表。</summary>
-    private static (List<uint> materialIds, List<int> neededList, List<int> missingList)
+    internal static (List<uint> materialIds, List<int> neededList, List<int> missingList)
         ComputeMaterialNeedsCore(
             WeaponSeriesInfo                     info,
             List<List<(uint ItemId, int Count)>> recipes,
@@ -105,7 +105,7 @@ public static class Compute
 
     /// <summary>扫描武器进度，返回各阶段仍需攻克的职业数。
     /// 不持有任意阶段武器的职业视为需要从阶段 0 开始。</summary>
-    private static List<int> ComputeStageNeeds(
+    internal static List<int> ComputeStageNeeds(
         WeaponSeriesInfo info,
         Func<uint, int>  getItemCountTotal)
     {

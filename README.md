@@ -26,8 +26,11 @@
   - 精确计算各阶段材料需求（优武、义武、曼武、幻武）
 - 🔄 **IPC 数据缓存**
   - 一键刷新并缓存所有武器和材料数据，避免重复 IPC 调用
+  - 获得追踪武器时自动刷新缓存并更新界面（同帧事件合并）
 - 💬 **进度评语**
   - 根据总进度百分比随机显示趣味评语，可通过 `ProgressComments.json` 自定义
+- 🏪 **商店兑换辅助**
+  - 在曼武/幻武素材兑换界面，自动追加显示「持有数量/共需数量」
 - 🎨 **直观的 UI 界面**
   - 标签页导航，总览页显示全系列进度条与绝本圆形进度
   - 物品图标内嵌显示，支持点击复制物品名称
@@ -68,6 +71,8 @@ SpecialWeaponProgressOverview/
 │   ├── WeaponSeries.cs                   # 武器系列枚举  
 │   ├── WeaponSeriesInfo.cs               # 系列元数据（阶段、名称、职业索引）  
 │   └── ItemInfo.cs                       # 物品 ID + 数量 DTO  
+├── Shop/                                # 商店 UI 修饰  
+│   └── ShopExchangeModifier.cs           # 兑换界面素材共需数量显示  
 ├── Plugin.cs                             # 插件主入口（/pover）  
 ├── MainWindow.cs                         # 主窗口（标签页导航、总览、进度绘制）  
 └── ProgressComments.json                 # 进度评语数据  

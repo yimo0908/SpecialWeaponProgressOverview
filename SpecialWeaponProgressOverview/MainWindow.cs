@@ -41,8 +41,14 @@ public class MainWindow : Window, IDisposable
 
     private static int GetItemCountTotal(uint itemId) => Inventory.GetItemCountTotal(itemId);
 
+    private void OnCacheAutoRefreshed()
+    {
+        _needsRefresh = true;
+    }
+
     public void Dispose()
     {
+        Inventory.CacheAutoRefreshed -= OnCacheAutoRefreshed;
         Inventory.Dispose();
         GC.SuppressFinalize(this);
     }
@@ -50,6 +56,7 @@ public class MainWindow : Window, IDisposable
     public void InitChart()
     {
         Inventory.Init();
+        Inventory.CacheAutoRefreshed += OnCacheAutoRefreshed;
         _process = new Process(GetItemCountTotal);
 
         foreach (var kvp in WeaponSeriesInfo.All)

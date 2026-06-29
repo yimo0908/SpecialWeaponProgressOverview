@@ -247,9 +247,9 @@ public static class DataBase
     /// <summary>幻武各阶段材料配方：每阶段对应 (ItemId, 数量) 列表。</summary>
     public static readonly List<List<(uint ItemId, int Count)>> PhantomMaterialRecipes =
     [
-        [(47750, 3)],   // 幻境武器·半影
-        [(46850, 3)],   // 幻境武器·本影
-        [(50058, 3)],   // 幻境武器·黯影
+        [(47750, 3)],   // 幻境武器·半影    — 新月矿石
+        [(46850, 3)],   // 幻境武器·本影    — 上弦月矿石
+        [(50058, 3)],   // 幻境武器·黯影    — 下弦月矿石
     ];
 
     /// <summary>优武各阶段材料配方：每阶段对应 (ItemId, 数量) 列表。</summary>

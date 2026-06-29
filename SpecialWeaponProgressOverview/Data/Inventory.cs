@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.Inventory;
+using Dalamud.Game.Inventory.InventoryEventArgTypes;
 using Dalamud.Plugin.Ipc;
 using Dalamud.Plugin.Ipc.Exceptions;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -24,6 +26,15 @@ public static class Inventory
 
     /// <summary>物品总数缓存：itemId → 全雇员合计数量。RefreshCache 时预计算。</summary>
     private static readonly Dictionary<uint, int> _itemTotalCache = new();
+
+    /// <summary>所有追踪的武器 ItemId 集合，用于 ItemAdded 事件快速过滤。惰性初始化。</summary>
+    private static HashSet<uint>? _trackedWeaponIds;
+
+    /// <summary>同帧内多个 ItemAdded 合并为一次 RefreshCache 的待刷新标志。</summary>
+    private static bool _refreshPending;
+
+    /// <summary>缓存因武器变动自动刷新后触发，供 UI 层订阅以触发重算。</summary>
+    public static event Action? CacheAutoRefreshed;
 
     public static bool AToolsInstalled
     {
@@ -62,6 +73,7 @@ public static class Inventory
         _isInitialized    = PluginService.PluginInterface.GetIpcSubscriber<bool>("AllaganTools.IsInitialized");
         _initializedEvent.Subscribe(SetupIpc);
         PluginService.ClientState.Logout += ClearRetainerCache;
+        PluginService.GameInventory.ItemAdded += OnItemAdded;
 
         try
         {
@@ -183,6 +195,39 @@ public static class Inventory
         DataCached = false;
     }
 
+    /// <summary>
+    /// IGameInventory.ItemAdded 回调：玩家获得追踪武器时（不含 move/split/merge 位置变动），
+    /// 延迟到下一帧执行一次 RefreshCache。同帧内多次事件只触发一次。
+    /// </summary>
+    private static void OnItemAdded(GameInventoryEvent type, InventoryEventArgs data)
+    {
+        _trackedWeaponIds ??= BuildTrackedWeaponIds();
+        if (!_trackedWeaponIds.Contains(data.Item.BaseItemId))
+            return;
+
+        if (_refreshPending) return;
+        _refreshPending = true;
+        PluginService.Framework.RunOnTick(ExecutePendingRefresh);
+    }
+
+    /// <summary>延迟执行缓存刷新并通知 UI 层。RunOnTick 保证在下一 Framework.Tick 执行。</summary>
+    private static void ExecutePendingRefresh()
+    {
+        _refreshPending = false;
+        RefreshCache();
+        CacheAutoRefreshed?.Invoke();
+    }
+
+    private static HashSet<uint> BuildTrackedWeaponIds()
+    {
+        var set = new HashSet<uint>();
+        foreach (var kvp in WeaponSeriesInfo.All)
+            foreach (var stage in kvp.Value.WeaponIdStages)
+                foreach (var itemId in stage)
+                    set.Add(itemId);
+        return set;
+    }
+
     private static void SetupIpc(bool _)
     {
         _itemCountIpc = PluginService.PluginInterface.GetIpcSubscriber<uint, ulong, uint, uint>("AllaganTools.ItemCount");
@@ -276,11 +321,14 @@ public static class Inventory
 
     public static void Dispose()
     {
+        PluginService.GameInventory.ItemAdded -= OnItemAdded;
+        CacheAutoRefreshed = null;
         _initializedEvent?.Unsubscribe(SetupIpc);
         PluginService.ClientState.Logout -= ClearRetainerCache;
         _initializedEvent = null;
         _isInitialized    = null;
         _itemCountIpc     = null;
         _aToolsInstalledChecked = false;
+        _refreshPending   = false;
     }
 }

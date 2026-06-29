@@ -16,6 +16,9 @@ public class PluginService
     [PluginService] public static IClientState              ClientState     { get; set; } = null!;
     [PluginService] public static ICondition                Condition       { get; set; } = null!;
     [PluginService] public static ITextureProvider           TextureProvider { get; set; } = null!;
+    [PluginService] public static IGameGui                   GameGui        { get; set; } = null!;
+    [PluginService] public static IFramework                 Framework      { get; set; } = null!;
+    [PluginService] public static IGameInventory              GameInventory  { get; set; } = null!;
 
     private static bool _isInitialized;
 
