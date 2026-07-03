@@ -20,6 +20,7 @@ public sealed class Plugin : IDalamudPlugin
         PluginService.Init(pluginInterface);
 
         _shopModifier = new ShopExchangeModifier();
+        _mainWindow.ShopModifier = _shopModifier;
 
         WindowSystem.AddWindow(_mainWindow);
 

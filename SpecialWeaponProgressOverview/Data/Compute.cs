@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Lumina.Excel;
-using Lumina.Excel.Sheets;
 using SpecialWeaponProgressOverview.Base;
 using SpecialWeaponProgressOverview.Models;
 
@@ -10,65 +8,74 @@ namespace SpecialWeaponProgressOverview.Data;
 
 public static class Compute
 {
-    private static readonly ExcelSheet<Item> ItemSheet =
-        PluginService.DataManager.GetExcelSheet<Item>();
+    // ---- 结构化材料需求结果 ----
+
+    /// <summary>材料需求结果：包含多个分段和可选的页脚文本（如神典石）。</summary>
+    public sealed class MaterialNeedsResult
+    {
+        public List<MaterialNeedsSection> Sections { get; } = new();
+        public string? Footer { get; set; }
+    }
+
+    /// <summary>单个分段（如"需要"/"仍需"），包含材料 ItemId 与数量列表。</summary>
+    public sealed class MaterialNeedsSection
+    {
+        public required string Prefix { get; init; }
+        public required List<(uint ItemId, int Count)> Entries { get; init; }
+    }
 
     // ---- 材料需求计算 ----
 
     /// <summary>计算义军武器所需材料。</summary>
-    public static string ComputeNeedsBozja(
+    public static MaterialNeedsResult? ComputeNeedsBozja(
         WeaponSeriesInfo info,
         Func<uint, int>  getItemCountTotal)
     {
         var (materialIds, neededList, missingList) =
             ComputeMaterialNeedsCore(info, DataBase.BozjaMaterialRecipes, getItemCountTotal);
 
-        return BuildMaterialString("需要", neededList, materialIds)
-             + BuildMaterialString("仍需", missingList, materialIds);
+        return BuildResult("需要", neededList, "仍需", missingList, materialIds);
     }
 
     /// <summary>计算曼德维尔武器所需材料（陨石系列 + 诗学）。</summary>
-    public static string ComputeNeedsMandervillous(
+    public static MaterialNeedsResult? ComputeNeedsMandervillous(
         WeaponSeriesInfo info,
         Func<uint, int>  getItemCountTotal)
     {
         var (materialIds, neededList, missingList) =
             ComputeMaterialNeedsCore(info, DataBase.MandervillousMaterialRecipes, getItemCountTotal);
 
-        // 每阶段 ×3 材料 ×500 诗学 = missingList.Sum() × 500
         var totalPoetics = missingList.Sum() * 500;
-
-        return BuildMaterialString("需要", neededList, materialIds)
-             + BuildMaterialString("仍需", missingList, materialIds)
-             + $"共计: {totalPoetics}诗学神典石";
+        var result = BuildResult("需要", neededList, "仍需", missingList, materialIds);
+        if (result != null)
+            result.Footer = $"共计: {totalPoetics}诗学神典石";
+        return result;
     }
 
     /// <summary>计算幻境武器所需材料。</summary>
-    public static string ComputeNeedsPhantom(
+    public static MaterialNeedsResult? ComputeNeedsPhantom(
         WeaponSeriesInfo info,
         Func<uint, int>  getItemCountTotal)
     {
         var (materialIds, neededList, missingList) =
             ComputeMaterialNeedsCore(info, DataBase.PhantomMaterialRecipes, getItemCountTotal);
 
-        // 每个材料 ×500 数理神典石
         var totalPoetics = missingList.Sum() * 500;
-
-        return BuildMaterialString("需要", neededList, materialIds)
-             + BuildMaterialString("仍需", missingList, materialIds)
-             + $"共计: {totalPoetics}数理神典石";
+        var result = BuildResult("需要", neededList, "仍需", missingList, materialIds);
+        if (result != null)
+            result.Footer = $"共计: {totalPoetics}数理神典石";
+        return result;
     }
 
     /// <summary>计算优武所需材料。</summary>
-    public static string ComputeNeedsEureka(
+    public static MaterialNeedsResult? ComputeNeedsEureka(
         WeaponSeriesInfo info,
         Func<uint, int>  getItemCountTotal)
     {
         var (materialIds, neededList, missingList) =
             ComputeMaterialNeedsCore(info, DataBase.EurekaMaterialRecipes, getItemCountTotal);
 
-        return BuildMaterialString("需要", neededList, materialIds)
-             + BuildMaterialString("仍需", missingList, materialIds);
+        return BuildResult("需要", neededList, "仍需", missingList, materialIds);
     }
 
     // ---- 核心计算逻辑 ----
@@ -113,9 +120,8 @@ public static class Compute
         var jobCount    = jobIdList.Count;
         var stageCount  = info.WeaponIdStages.Count;
 
-        var weaponNeed = new Dictionary<uint, List<int>>();
-        for (var i = 0; i < jobCount; i++)
-            weaponNeed[jobIdList[i]] = Enumerable.Repeat(0, stageCount).ToList();
+        // 直接按阶段累计，无需中间 Dictionary<uint, List<int>>
+        var needs = new int[stageCount];
 
         for (var i = 0; i < jobCount; i++)
         {
@@ -131,7 +137,9 @@ public static class Compute
                 if (getItemCountTotal(info.WeaponIdStages[j][jobIndex]) > 0)
                 {
                     hasAny = true;
-                    AddOneToFollowing(weaponNeed[curJobId], j);
+                    // 拥有阶段 j 的武器 → 后续阶段 j+1..end 各需 +1
+                    for (var k = j + 1; k < stageCount; k++)
+                        needs[k]++;
                 }
             }
 
@@ -139,24 +147,11 @@ public static class Compute
             if (!hasAny)
             {
                 for (var j = 0; j < stageCount; j++)
-                    weaponNeed[curJobId][j] = 1;
+                    needs[j]++;
             }
         }
 
-        var needs = Enumerable.Repeat(0, stageCount).ToList();
-        foreach (var jobId in jobIdList)
-        {
-            for (var i = 0; i < stageCount; i++)
-                needs[i] += weaponNeed[jobId][i];
-        }
-
-        return needs;
-    }
-
-    private static void AddOneToFollowing(List<int> array, int currentIndex)
-    {
-        for (var i = currentIndex + 1; i < array.Count; i++)
-            array[i] += 1;
+        return needs.ToList();
     }
 
     private static List<int> SubtractLists(List<int> a, List<int> b)
@@ -167,16 +162,42 @@ public static class Compute
         return result;
     }
 
-    private static string BuildMaterialString(
-        string prefix, List<int> counts, List<uint> itemIds)
+    /// <summary>根据需要量/仍需量构建结构化结果。若两组均无内容则返回 null。</summary>
+    private static MaterialNeedsResult? BuildResult(
+        string neededPrefix, List<int> neededList,
+        string missingPrefix, List<int> missingList,
+        List<uint> itemIds)
     {
-        var parts = new List<string>();
+        var result = new MaterialNeedsResult();
+
+        var neededEntries = BuildEntries(neededList, itemIds);
+        if (neededEntries.Count > 0)
+            result.Sections.Add(new MaterialNeedsSection
+            {
+                Prefix = neededPrefix,
+                Entries = neededEntries
+            });
+
+        var missingEntries = BuildEntries(missingList, itemIds);
+        if (missingEntries.Count > 0)
+            result.Sections.Add(new MaterialNeedsSection
+            {
+                Prefix = missingPrefix,
+                Entries = missingEntries
+            });
+
+        return result.Sections.Count > 0 ? result : null;
+    }
+
+    private static List<(uint ItemId, int Count)> BuildEntries(
+        List<int> counts, List<uint> itemIds)
+    {
+        var entries = new List<(uint ItemId, int Count)>();
         for (var i = 0; i < counts.Count; i++)
         {
             if (counts[i] <= 0) continue;
-            var name = ItemSheet.GetRow(itemIds[i]).Name.ExtractText();
-            parts.Add($"{counts[i]}个{name}");
+            entries.Add((itemIds[i], counts[i]));
         }
-        return parts.Count == 0 ? string.Empty : $"{prefix}: {string.Join(", ", parts)}\n";
+        return entries;
     }
 }

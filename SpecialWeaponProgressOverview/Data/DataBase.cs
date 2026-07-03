@@ -74,7 +74,7 @@ public static class DataBase
         Enumerable.Range(50032, 21).Select(i => (uint)i).ToList(), //幻境武器·黯影
     ];
 
-    public static readonly List<List<uint>> SkysteelWeaponId =
+    public static readonly List<List<uint>> SkysteelToolId =
     [
         Enumerable.Range(29612, 11).Select(i => (uint)i).ToList(), //天钢工具
         Enumerable.Range(29623, 11).Select(i => (uint)i).ToList(), //天钢工具+1
@@ -84,7 +84,7 @@ public static class DataBase
         Enumerable.Range(31714, 13).Select(i => (uint)i).ToList(), //天工工具
     ];
 
-    public static readonly List<List<uint>> SplendorousWeaponId =
+    public static readonly List<List<uint>> SplendorousToolId =
     [
         Enumerable.Range(38715, 11).Select(i => (uint)i).ToList(), //卓越
         Enumerable.Range(38726, 11).Select(i => (uint)i).ToList(), //改良型卓越
@@ -93,6 +93,14 @@ public static class DataBase
         Enumerable.Range(39743, 11).Select(i => (uint)i).ToList(), //乔菈卓绝
         Enumerable.Range(41180, 11).Select(i => (uint)i).ToList(), //诺弗兰特远见
         Enumerable.Range(41191, 11).Select(i => (uint)i).ToList(), //领航星
+    ];
+
+    public static readonly List<List<uint>> CosmicToolId =
+    [
+        Enumerable.Range(45679, 11).Select(i => (uint)i).ToList(), //宇宙工具
+        Enumerable.Range(49053, 11).Select(i => (uint)i).ToList(), //太空工具
+        Enumerable.Range(49148, 11).Select(i => (uint)i).ToList(), //超空间工具
+        Enumerable.Range(51778, 11).Select(i => (uint)i).ToList(), //群星工具
     ];
 
     public static readonly List<List<uint>> UltimateWeaponId =
@@ -176,14 +184,21 @@ public static class DataBase
         25, 27, 35, 42,
     ];
 
-    public static readonly List<uint> SkysteelWeaponJobIdList =
+    public static readonly List<uint> SkysteelToolJobIdList =
     [
         8, 9, 10, 11,
         12, 13, 14, 15,
         16, 17, 18,
     ];
 
-    public static readonly List<uint> SplendorousWeaponJobIdList =
+    public static readonly List<uint> SplendorousToolJobIdList =
+    [
+        8, 9, 10, 11,
+        12, 13, 14, 15,
+        16, 17, 18,
+    ];
+
+    public static readonly List<uint> CosmicToolJobIdList =
     [
         8, 9, 10, 11,
         12, 13, 14, 15,

@@ -48,7 +48,7 @@ public sealed class WeaponSeriesInfo
         };
     }
 
-    // ---- 9 系列的全局注册表 ----
+    // ---- 10 系列的全局注册表 ----
     public static readonly WeaponSeriesInfo Zodiac = new()
     {
         Series       = WeaponSeries.Zodiac,
@@ -125,8 +125,8 @@ public sealed class WeaponSeriesInfo
         Series       = WeaponSeries.Skysteel,
         DisplayName  = "Skysteel",
         ChineseName  = "天钢",
-        JobIdList    = DataBase.SkysteelWeaponJobIdList,
-        WeaponIdStages = DataBase.SkysteelWeaponId,
+        JobIdList    = DataBase.SkysteelToolJobIdList,
+        WeaponIdStages = DataBase.SkysteelToolId,
         PhaseNames   = ["天钢工具", "天钢工具+1", "龙诗工具", "改良型龙诗工具", "天诗工具", "天工工具"],
         JobIndexKind = JobIndexKind.Life,
     };
@@ -136,10 +136,21 @@ public sealed class WeaponSeriesInfo
         Series       = WeaponSeries.Splendorous,
         DisplayName  = "Splendorous",
         ChineseName  = "莫雯",
-        JobIdList    = DataBase.SplendorousWeaponJobIdList,
-        WeaponIdStages = DataBase.SplendorousWeaponId,
+        JobIdList    = DataBase.SplendorousToolJobIdList,
+        WeaponIdStages = DataBase.SplendorousToolId,
         PhaseNames   = ["卓越工具", "改良型卓越工具", "水晶工具", "乔菈水晶工具",
                         "乔菈卓绝工具", "诺弗兰特远见工具", "领航星工具"],
+        JobIndexKind = JobIndexKind.Life,
+    };
+
+    public static readonly WeaponSeriesInfo Cosmic = new()
+    {
+        Series       = WeaponSeries.Cosmic,
+        DisplayName  = "Cosmic",
+        ChineseName  = "宇宙",
+        JobIdList    = DataBase.CosmicToolJobIdList,
+        WeaponIdStages = DataBase.CosmicToolId,
+        PhaseNames   = ["宇宙工具", "太空工具", "超空间工具", "群星工具"],
         JobIndexKind = JobIndexKind.Life,
     };
 
@@ -165,25 +176,17 @@ public sealed class WeaponSeriesInfo
             [WeaponSeries.Phantom]       = Phantom,
             [WeaponSeries.Skysteel]      = Skysteel,
             [WeaponSeries.Splendorous]   = Splendorous,
+            [WeaponSeries.Cosmic]        = Cosmic,
             [WeaponSeries.Ultimate]      = Ultimate,
         };
 
     /// <summary>横向 Tab 显示名称（含"总览"）。</summary>
     public static readonly string[] TabNames =
-        ["总览", "古武", "魂武", "优武", "义武", "曼武", "幻武", "天钢", "莫雯", "绝境战"];
+        ["总览", "古武", "魂武", "优武", "义武", "曼武", "幻武", "天钢", "莫雯", "宇宙", "绝境战"];
 
-    /// <summary>Tab 索引 → 枚举。</summary>
-    public static WeaponSeries FromComboIndex(int index) => index switch
-    {
-        1 => WeaponSeries.Zodiac,
-        2 => WeaponSeries.Anima,
-        3 => WeaponSeries.Eureka,
-        4 => WeaponSeries.Bozja,
-        5 => WeaponSeries.Mandervillous,
-        6 => WeaponSeries.Phantom,
-        7 => WeaponSeries.Skysteel,
-        8 => WeaponSeries.Splendorous,
-        9 => WeaponSeries.Ultimate,
-        _ => WeaponSeries.None,
-    };
+    /// <summary>Tab 索引 → 枚举。索引与 <see cref="WeaponSeries"/> 枚举值一一对应。</summary>
+    public static WeaponSeries FromComboIndex(int index)
+        => index >= 0 && index <= (int)WeaponSeries.Ultimate
+            ? (WeaponSeries)index
+            : WeaponSeries.None;
 }

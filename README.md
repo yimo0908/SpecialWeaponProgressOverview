@@ -1,6 +1,6 @@
 # SpecialWeaponProgressOverview
 
-一个用于追踪FFXIV特殊武器进度的 Dalamud 插件，支持多种武器系列的进度显示和材料统计。
+一个用于追踪 FFXIV 特殊武器进度的 Dalamud 插件，支持多种武器系列的进度显示和材料统计。
 
 ---
 > **注意：本插件为非官方开发，请遵守游戏使用条款。**
@@ -8,7 +8,7 @@
 
 ## 功能特点
 
-- 🎯 **支持 9 种武器系列追踪**
+- 🎯 **支持 10 种武器系列追踪**
   - 古武 (Zodiac Weapons)
   - 魂武 (Anima Weapons)
   - 优武 (Eureka Weapons)
@@ -17,6 +17,7 @@
   - 幻武 (Phantom Weapons)
   - 天钢工具 (Skysteel Tools)
   - 莫雯工具 (Splendorous Tools)
+  - 宇宙工具 (Cosmic Tools)
   - 绝本武器 (Ultimate Weapons)
 - 📊 **实时进度显示**
   - 自动获取当前武器阶段和进度
@@ -31,51 +32,57 @@
   - 根据总进度百分比随机显示趣味评语，可通过 `ProgressComments.json` 自定义
 - 🏪 **商店兑换辅助**
   - 在曼武/幻武素材兑换界面，自动追加显示「持有数量/共需数量」
+  - 可在主界面右上角通过「商店界面优化」复选框随时开关
 - 🎨 **直观的 UI 界面**
   - 标签页导航，总览页显示全系列进度条与绝本圆形进度
   - 物品图标内嵌显示，支持点击复制物品名称
 
 ## 前置条件
 
-- FFXIV客户端
-- Dalamud  
-- Allagan Tools
+- FFXIV 客户端
+- Dalamud
+- Allagan Tools（读取雇员背包数据所需）
 
 ## 使用说明
 
-1. 安装Dalamud和Allagan Tools插件。
+1. 安装 Dalamud 和 Allagan Tools 插件。
 2. 添加仓库链接  
-   ```https://raw.githubusercontent.com/yimo0908/DalamudPlugin/refs/heads/main/pluginmaster.json```.
-3. 搜索并安装SpecialWeaponProgressOverview插件。
-4. 使用 `/pover` 命令打开主界面  
+   ```https://raw.githubusercontent.com/yimo0908/DalamudPlugin/main/repo.json```
+3. 搜索并安装 SpecialWeaponProgressOverview 插件。
+4. 使用 `/pover` 命令打开主界面。
+5. 点击「刷新」按钮获取最新武器进度数据（首次使用前请先交互传唤铃以加载雇员背包数据）。
+6. 如需开关商店界面优化功能，勾选/取消主界面右上角的「商店界面优化」复选框。
 
 ## 开发指南
 
 ### 项目结构
 
-SpecialWeaponProgressOverview/  
-├── Base/                                 # 核心功能实现  
-│   ├── PluginService.cs                  # Dalamud 服务注入与静态访问  
-│   └── Process.cs                        # 武器进度数据获取逻辑  
-├── Data/                                 # 数据处理和计算  
-│   ├── Compute.cs                        # 材料需求计算引擎  
-│   ├── DataBase.cs                       # 武器 ID、职业列表、材料配方  
-│   ├── Inventory.cs                      # 背包扫描与 Allagan Tools IPC 缓存  
-│   ├── ProgressComments.cs               # 进度评语加载与随机抽取  
-│   └── Providers/  
-│       └── IconHandler.cs                # 图标纹理缓存  
-├── Drawer/                               # UI 绘制组件  
-│   ├── DrawMethod.cs                     # 通用绘制方法（物品图标、剪贴板、聊天链接）  
-│   └── WeaponSeriesDrawer.cs             # 统一武器进度表格绘制  
-├── Models/                               # 数据模型  
-│   ├── WeaponSeries.cs                   # 武器系列枚举  
-│   ├── WeaponSeriesInfo.cs               # 系列元数据（阶段、名称、职业索引）  
-│   └── ItemInfo.cs                       # 物品 ID + 数量 DTO  
-├── Shop/                                # 商店 UI 修饰  
-│   └── ShopExchangeModifier.cs           # 兑换界面素材共需数量显示  
-├── Plugin.cs                             # 插件主入口（/pover）  
-├── MainWindow.cs                         # 主窗口（标签页导航、总览、进度绘制）  
-└── ProgressComments.json                 # 进度评语数据  
+```
+SpecialWeaponProgressOverview/
+├── Base/                                 # 核心功能实现
+│   ├── PluginService.cs                  # Dalamud 服务注入与静态访问（含共享 ItemSheet）
+│   └── Process.cs                        # 武器进度数据获取逻辑
+├── Data/                                 # 数据处理和计算
+│   ├── Compute.cs                        # 材料需求计算引擎
+│   ├── DataBase.cs                       # 武器 ID、职业列表、材料配方
+│   ├── Inventory.cs                      # 背包扫描与 Allagan Tools IPC 缓存
+│   ├── ProgressComments.cs               # 进度评语加载与随机抽取
+│   └── Providers/
+│       └── IconHandler.cs                # 图标纹理缓存
+├── Drawer/                               # UI 绘制组件
+│   ├── DrawMethod.cs                     # 通用绘制方法（物品图标、剪贴板、聊天链接）
+│   ├── PixelStyle.cs                     # 像素风格共享样式常量与辅助方法
+│   └── WeaponSeriesDrawer.cs             # 统一武器进度表格绘制
+├── Models/                               # 数据模型
+│   ├── WeaponSeries.cs                   # 武器系列枚举
+│   ├── WeaponSeriesInfo.cs               # 系列元数据（阶段、名称、职业索引）
+│   └── ItemInfo.cs                       # 物品 ID + 数量 DTO
+├── Shop/                                 # 商店 UI 修饰
+│   └── ShopExchangeModifier.cs           # 兑换界面素材共需数量显示（可开关）
+├── Plugin.cs                             # 插件主入口（/pover）
+├── MainWindow.cs                         # 主窗口（标签页导航、总览、进度绘制）
+└── ProgressComments.json                 # 进度评语数据
+```
 
 ### 更新指南
 
@@ -92,6 +99,7 @@ SpecialWeaponProgressOverview/
 
 3. **UI 显示更新**
     - 统一由 `Drawer/WeaponSeriesDrawer.cs` 处理表格布局，`Drawer/DrawMethod.cs` 处理物品单元格绘制
+    - 共享样式（颜色常量、分隔线、进度色）集中在 `Drawer/PixelStyle.cs`
     - 如有新增武器系列，在 `Models/WeaponSeries.cs` 枚举和 `Models/WeaponSeriesInfo.cs` 元数据中注册
 
 4. **进度评语更新**
@@ -99,7 +107,7 @@ SpecialWeaponProgressOverview/
 
 ## 贡献指南
 
-欢迎提交Issue和Pull Request来帮助改进这个项目。
+欢迎提交 Issue 和 Pull Request 来帮助改进这个项目。
 
 ## 许可证 License
 

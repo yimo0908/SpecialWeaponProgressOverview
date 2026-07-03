@@ -4,8 +4,6 @@ using System.Linq;
 using System.Text;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel;
-using Lumina.Excel.Sheets;
 using SpecialWeaponProgressOverview.Base;
 using SpecialWeaponProgressOverview.Data;
 using SpecialWeaponProgressOverview.Models;
@@ -18,14 +16,17 @@ namespace SpecialWeaponProgressOverview.Shop;
 /// </summary>
 public sealed unsafe class ShopExchangeModifier : IDisposable
 {
-    private static readonly ExcelSheet<Item> ItemSheet =
-        PluginService.DataManager.GetExcelSheet<Item>();
-
     /// <summary>素材名称 → ItemId（静态）</summary>
     private static readonly Dictionary<string, uint> NameToItemId = BuildNameToItemId();
 
     /// <summary>itemId → 共需数量（运行时计算）</summary>
     private Dictionary<uint, int> _materialRequired = new();
+
+    /// <summary>文本节点缓冲区，避免每帧分配。Framework 单线程，可安全复用。</summary>
+    private readonly List<(nint node, string text)> _textNodeBuffer = new();
+
+    /// <summary>是否启用商店界面优化。关闭时不监听 Framework.Update。</summary>
+    public bool Enabled = true;
 
     private bool _shopWasVisible;
     private DateTime _lastComputeTime = DateTime.MinValue;
@@ -37,6 +38,8 @@ public sealed unsafe class ShopExchangeModifier : IDisposable
 
     private void OnFrameworkUpdate(IFramework framework)
     {
+        if (!Enabled) return;
+
         var addonPtr = PluginService.GameGui.GetAddonByName("ShopExchangeCurrency", 1);
         if (addonPtr.IsNull || !addonPtr.IsVisible)
         {
@@ -109,15 +112,15 @@ public sealed unsafe class ShopExchangeModifier : IDisposable
 
     private void ProcessRow(AtkComponentNode* row)
     {
+        _textNodeBuffer.Clear();
         var rowUld = row->Component->UldManager;
-        var textNodes = new List<(nint node, string text)>();
-        CollectTextNodes(rowUld.NodeList, rowUld.NodeListCount, textNodes);
+        CollectTextNodes(rowUld.NodeList, rowUld.NodeListCount, _textNodeBuffer);
 
         // 查找素材名称 → itemId → 共需量
         nint nameNodePtr = 0;
         int required = 0;
 
-        foreach (var (nodePtr, text) in textNodes)
+        foreach (var (nodePtr, text) in _textNodeBuffer)
         {
             if (string.IsNullOrEmpty(text)) continue;
             foreach (var kvp in NameToItemId)
@@ -133,7 +136,7 @@ public sealed unsafe class ShopExchangeModifier : IDisposable
         if (nameNodePtr == 0) return;
 
         // 查找持有数量文本并修改
-        foreach (var (nodePtr, text) in textNodes)
+        foreach (var (nodePtr, text) in _textNodeBuffer)
         {
             if (nodePtr == nameNodePtr) continue;
 
@@ -193,10 +196,10 @@ public sealed unsafe class ShopExchangeModifier : IDisposable
         var dict = new Dictionary<string, uint>();
         foreach (var stage in DataBase.MandervillousMaterialRecipes)
             foreach (var (itemId, _) in stage)
-                dict.TryAdd(ItemSheet.GetRow(itemId).Name.ExtractText(), itemId);
+                dict.TryAdd(PluginService.ItemSheet.GetRow(itemId).Name.ExtractText(), itemId);
         foreach (var stage in DataBase.PhantomMaterialRecipes)
             foreach (var (itemId, _) in stage)
-                dict.TryAdd(ItemSheet.GetRow(itemId).Name.ExtractText(), itemId);
+                dict.TryAdd(PluginService.ItemSheet.GetRow(itemId).Name.ExtractText(), itemId);
         return dict;
     }
 

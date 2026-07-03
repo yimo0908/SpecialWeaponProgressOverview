@@ -2,6 +2,8 @@ using System;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using Lumina.Excel;
+using Lumina.Excel.Sheets;
 
 namespace SpecialWeaponProgressOverview.Base;
 
@@ -20,6 +22,9 @@ public class PluginService
     [PluginService] public static IFramework                 Framework      { get; set; } = null!;
     [PluginService] public static IGameInventory              GameInventory  { get; set; } = null!;
 
+    /// <summary>共享 Item 表，避免多处重复 GetExcelSheet 调用。</summary>
+    public static ExcelSheet<Item> ItemSheet { get; private set; } = null!;
+
     private static bool _isInitialized;
 
     public static void Init(IDalamudPluginInterface pi)
@@ -30,6 +35,7 @@ public class PluginService
         try
         {
             pi.Create<PluginService>();
+            ItemSheet = DataManager.GetExcelSheet<Item>();
             _isInitialized = true;
         }
         catch (Exception ex)

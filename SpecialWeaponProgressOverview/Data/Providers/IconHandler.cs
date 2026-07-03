@@ -34,10 +34,4 @@ public sealed class IconHandler
             .GetFromGameIcon(new GameIconLookup(_iconId));
     }
 
-    /// <summary>静态快捷方法：按 iconId 获取共享纹理（不缓存，适用于一次性使用场景）。</summary>
-    public static ISharedImmediateTexture GetIcon(uint iconId, bool hq = false)
-    {
-        return PluginService.TextureProvider
-            .GetFromGameIcon(new GameIconLookup(iconId, hq));
-    }
 }

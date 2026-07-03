@@ -234,7 +234,7 @@ public static class Inventory
     }
 
     // ---- 雇员背包缓存 ----
-    public static readonly Dictionary<ulong, Dictionary<uint, ItemInfo>> RetainerData = new();
+    internal static readonly Dictionary<ulong, Dictionary<uint, ItemInfo>> RetainerData = new();
 
     private static uint GetRetainerInventoryItem(uint itemId, ulong retainerId)
     {
@@ -258,53 +258,22 @@ public static class Inventory
         if (!PluginService.ClientState.IsLoggedIn || PluginService.Condition[ConditionFlag.OnFreeTrial])
             return 0;
 
-        // 已通过 RefreshCache 完成全量缓存后，只读缓存，不再调用 AT.IPC
-        if (DataCached)
-            return GetCachedSum(itemId);
-
-        try
+        // 未完成全量缓存时，触发一次批量刷新（同步完成后 DataCached=true，后续调用直接读缓存）
+        if (!DataCached)
         {
-            if (HasCached(itemId))
-                return GetCachedSum(itemId);
-
-            for (var i = 0u; i < 10; i++)
+            try
             {
-                var retainer = RetainerManager.Instance()->GetRetainerBySortedIndex(i);
-                var retainerId = retainer->RetainerId;
-                if (retainerId == 0 || !retainer->Available) continue;
-
-                if (!RetainerData.TryGetValue(retainerId, out var dict))
-                {
-                    dict = new Dictionary<uint, ItemInfo>();
-                    RetainerData[retainerId] = dict;
-                }
-
-                if (!dict.TryGetValue(itemId, out var info))
-                {
-                    info = new ItemInfo(itemId, 0);
-                    dict[itemId] = info;
-                }
-
-                info.Quantity = GetRetainerInventoryItem(itemId, retainerId);
+                RefreshCache();
             }
+            catch (Exception ex)
+            {
+                PluginService.PluginLog?.Warning($"获取雇员背包数据异常: {ex.Message}");
+                return 0;
+            }
+        }
 
-            // 重新计算该物品的全雇员合计并缓存
-            var sum = 0;
-            foreach (var dict in RetainerData.Values)
-                if (dict.TryGetValue(itemId, out var info2))
-                    sum += (int)info2.Quantity;
-            _itemTotalCache[itemId] = sum;
-            return sum;
-        }
-        catch (Exception ex)
-        {
-            PluginService.PluginLog?.Warning($"获取雇员背包数据异常: {ex.Message}");
-            return 0;
-        }
+        return GetCachedSum(itemId);
     }
-
-    private static bool HasCached(uint itemId) =>
-        _itemTotalCache.ContainsKey(itemId);
 
     private static int GetCachedSum(uint itemId) =>
         _itemTotalCache.TryGetValue(itemId, out var total) ? total : 0;

@@ -12,5 +12,6 @@ public enum WeaponSeries
     Phantom       = 6,
     Skysteel      = 7,
     Splendorous   = 8,
-    Ultimate      = 9,
+    Cosmic        = 9,
+    Ultimate      = 10,
 }
