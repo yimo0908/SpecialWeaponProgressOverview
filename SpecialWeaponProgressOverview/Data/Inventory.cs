@@ -22,7 +22,6 @@ public static class Inventory
     private static ICallGateSubscriber<bool>?                    _isInitialized;
 
     private static bool _aToolsInstalled;
-    private static bool _aToolsInstalledChecked;
 
     /// <summary>物品总数缓存：itemId → 全雇员合计数量。RefreshCache 时预计算。</summary>
     private static readonly Dictionary<uint, int> _itemTotalCache = new();
@@ -40,10 +39,11 @@ public static class Inventory
     {
         get
         {
-            if (_aToolsInstalledChecked) return _aToolsInstalled;
+            // 只缓存阳性结果：AT 被加入 InstalledPlugins 后永久缓存 true。
+            // 阴性结果不缓存，每次重新检查，以处理本插件先于 AT 加载的情况。
+            if (_aToolsInstalled) return true;
             _aToolsInstalled = PluginService.PluginInterface.InstalledPlugins.Any(
                 x => x.InternalName is "Allagan Tools" or "InventoryTools");
-            _aToolsInstalledChecked = true;
             return _aToolsInstalled;
         }
     }
@@ -328,7 +328,6 @@ public static class Inventory
         _initializedEvent = null;
         _isInitialized    = null;
         _itemCountIpc     = null;
-        _aToolsInstalledChecked = false;
         _refreshPending   = false;
     }
 }
