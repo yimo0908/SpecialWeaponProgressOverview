@@ -115,7 +115,7 @@ public sealed class WeaponSeriesInfo
         ChineseName  = "幻武",
         JobIdList    = DataBase.PhantomWeaponJobIdList,
         WeaponIdStages = DataBase.PhantomWeaponId,
-        PhaseNames   = ["幻境武器·半影", "幻境武器·本影", "幻境武器·黯影"],
+        PhaseNames   = ["幻境武器·半影", "幻境武器·本影", "幻境武器·黯影", "幻境武器·蚀影", "幻境武器·秘影"],
         JobIndexKind = JobIndexKind.New,
         HasMaterialComputation = true,
     };

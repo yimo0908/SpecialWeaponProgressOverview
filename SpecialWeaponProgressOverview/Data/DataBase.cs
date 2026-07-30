@@ -72,6 +72,8 @@ public static class DataBase
         Enumerable.Range(47869, 21).Select(i => (uint)i).ToList(), //幻境武器·半影
         Enumerable.Range(47006, 21).Select(i => (uint)i).ToList(), //幻境武器·本影
         Enumerable.Range(50032, 21).Select(i => (uint)i).ToList(), //幻境武器·黯影
+        Enumerable.Range(50978, 21).Select(i => (uint)i).ToList(), //幻境武器·蚀影
+        Enumerable.Range(51000, 21).Select(i => (uint)i).ToList(), //幻境武器·秘影
     ];
 
     public static readonly List<List<uint>> SkysteelToolId =
@@ -265,6 +267,8 @@ public static class DataBase
         [(47750, 3)],   // 幻境武器·半影    — 新月矿石
         [(46850, 3)],   // 幻境武器·本影    — 上弦月矿石
         [(50058, 3)],   // 幻境武器·黯影    — 下弦月矿石
+        [(50977, 3)],   // 幻境武器·蚀影    — 朔月矿石
+        [],             // 幻境武器·秘影    — 无消耗材料
     ];
 
     /// <summary>优武各阶段材料配方：每阶段对应 (ItemId, 数量) 列表。</summary>
