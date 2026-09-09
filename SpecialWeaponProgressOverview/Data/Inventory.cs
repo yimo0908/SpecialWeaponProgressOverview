@@ -4,9 +4,8 @@ using System.Linq;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Inventory;
 using Dalamud.Game.Inventory.InventoryEventArgTypes;
-using Dalamud.Plugin.Ipc;
-using Dalamud.Plugin.Ipc.Exceptions;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using SpecialWeaponProgressOverview.Base;
 using SpecialWeaponProgressOverview.Models;
 
@@ -14,16 +13,10 @@ namespace SpecialWeaponProgressOverview.Data;
 
 public static class Inventory
 {
-    /// <summary>是否已完成 AT.IPC 全部数据缓存，缓存后不再调用 AT.IPC。</summary>
+    /// <summary>是否已完成雇员/投影台缓存数据扫描，扫描后只读缓存不再遍历游戏结构。</summary>
     public static bool DataCached { get; private set; }
 
-    private static ICallGateSubscriber<uint, ulong, uint, uint>? _itemCountIpc;
-    private static ICallGateSubscriber<bool, bool>?              _initializedEvent;
-    private static ICallGateSubscriber<bool>?                    _isInitialized;
-
-    private static bool _aToolsInstalled;
-
-    /// <summary>物品总数缓存：itemId → 全雇员合计数量。RefreshCache 时预计算。</summary>
+    /// <summary>物品总数缓存：itemId → 雇员 + 投影台合计数量。RefreshCache 时预计算。</summary>
     private static readonly Dictionary<uint, int> _itemTotalCache = new();
 
     /// <summary>所有追踪的武器 ItemId 集合，用于 ItemAdded 事件快速过滤。惰性初始化。</summary>
@@ -35,147 +28,96 @@ public static class Inventory
     /// <summary>缓存因武器变动自动刷新后触发，供 UI 层订阅以触发重算。</summary>
     public static event Action? CacheAutoRefreshed;
 
-    public static bool AToolsInstalled
-    {
-        get
-        {
-            // 只缓存阳性结果：AT 被加入 InstalledPlugins 后永久缓存 true。
-            // 阴性结果不缓存，每次重新检查，以处理本插件先于 AT 加载的情况。
-            if (_aToolsInstalled) return true;
-            _aToolsInstalled = PluginService.PluginInterface.InstalledPlugins.Any(
-                x => x.InternalName is "Allagan Tools" or "InventoryTools");
-            return _aToolsInstalled;
-        }
-    }
-
-    public static bool ATools
-    {
-        get
-        {
-            if (!AToolsInstalled) return false;
-            try
-            {
-                return _isInitialized?.InvokeFunc() == true;
-            }
-            catch (IpcNotReadyError)
-            {
-                return false;
-            }
-        }
-    }
+    /// <summary>游戏道具检索缓存是否可读（雇员背包与投影台的数据源）。</summary>
+    public static unsafe bool ItemFinderReady => ItemFinderModule.Instance() != null;
 
     internal static void Init()
     {
         DataCached = false;
 
-        // 始终注册 IPC 事件订阅，避免因插件加载顺序错过 Allagan Tools 的 Initialized 事件
-        _initializedEvent = PluginService.PluginInterface.GetIpcSubscriber<bool, bool>("AllaganTools.Initialized");
-        _isInitialized    = PluginService.PluginInterface.GetIpcSubscriber<bool>("AllaganTools.IsInitialized");
-        _initializedEvent.Subscribe(SetupIpc);
-        PluginService.ClientState.Logout += ClearRetainerCache;
+        PluginService.ClientState.Logout += ClearCachedData;
         PluginService.GameInventory.ItemAdded += OnItemAdded;
-
-        try
-        {
-            if (AToolsInstalled && _isInitialized?.InvokeFunc() == true)
-            {
-                // Allagan Tools 已就绪，立即建立 IPC 连接
-                SetupIpc(true);
-            }
-            else
-            {
-                PluginService.PluginLog.Debug("Allagan Tools 尚未就绪，等待 Initialized 事件");
-            }
-        }
-        catch (IpcNotReadyError)
-        {
-            // Allagan Tools 已安装但 IPC 方法尚未注册，等 Initialized 事件触发后再连接
-            PluginService.PluginLog.Debug("Allagan Tools 的 IPC 尚未就绪，等待 Initialized 事件");
-        }
     }
 
-    /// <summary>确保 AT.IPC 已连接。处理 AT 在本插件之后加载、Initialized 事件未触发的情况。</summary>
-    private static void EnsureIpcConnected()
-    {
-        if (_itemCountIpc != null) return;
-        if (!AToolsInstalled) return;
-
-        try
-        {
-            _isInitialized ??= PluginService.PluginInterface.GetIpcSubscriber<bool>("AllaganTools.IsInitialized");
-            if (_isInitialized.InvokeFunc())
-            {
-                SetupIpc(true);
-                PluginService.PluginLog.Debug("延迟连接 AT.IPC 成功");
-            }
-        }
-        catch (IpcNotReadyError)
-        {
-            // AT IPC 仍未就绪
-        }
-    }
-
-    /// <summary>清空并重新从 AT.IPC 拉取所有武器及材料数据到本地缓存，缓存后页面只读缓存不再调用 IPC。</summary>
+    /// <summary>
+    /// 重新扫描游戏 ItemFinder 缓存中的雇员背包与投影台数据到本地缓存，
+    /// 缓存后页面只读缓存，不再重复遍历游戏内存结构。
+    /// </summary>
     public static unsafe void RefreshCache()
     {
-        EnsureIpcConnected();
-
-        if (!ATools || _itemCountIpc == null)
-        {
-            PluginService.PluginLog.Debug("AT.IPC 未就绪，跳过刷新");
-            return;
-        }
-
         if (!PluginService.ClientState.IsLoggedIn || PluginService.Condition[ConditionFlag.OnFreeTrial])
             return;
+
+        var finder = ItemFinderModule.Instance();
+        if (finder == null)
+        {
+            PluginService.PluginLog.Debug("游戏 ItemFinder 缓存不可用，跳过刷新");
+            return;
+        }
 
         RetainerData.Clear();
         _itemTotalCache.Clear();
         DataCached = false;
 
-        // 收集所有需要缓存的物品 ID（武器 + 材料）
-        var allItemIds = new HashSet<uint>();
-        foreach (var kvp in WeaponSeriesInfo.All)
-        {
-            foreach (var stage in kvp.Value.WeaponIdStages)
-            {
-                foreach (var itemId in stage)
-                    allItemIds.Add(itemId);
-            }
-        }
+        var allItemIds = CollectTrackedItemIds();
 
-        // 从配方表自动收集所有材料 ID，避免与 DataBase 重复维护
-        foreach (var recipe in DataBase.BozjaMaterialRecipes
-                     .Concat(DataBase.MandervillousMaterialRecipes)
-                     .Concat(DataBase.PhantomMaterialRecipes)
-                     .Concat(DataBase.EurekaMaterialRecipes)
-                     .SelectMany(stage => stage))
+        // 雇员背包：遍历 ItemFinder 缓存中每个雇员，按格累计数量
+        var scannedRetainerCount = 0;
+        foreach (var entry in finder->RetainerInventories)
         {
-            allItemIds.Add(recipe.ItemId);
-        }
-
-        // 先遍历雇员，再遍历物品：每个雇员一次性查询所有物品
-        for (var i = 0u; i < 10; i++)
-        {
-            var retainer   = RetainerManager.Instance()->GetRetainerBySortedIndex(i);
-            var retainerId = retainer->RetainerId;
-            if (retainerId == 0 || !retainer->Available)
+            if (entry.Item2.IsNull)
                 continue;
 
-            if (!RetainerData.TryGetValue(retainerId, out var dict))
+            var retainerInventory = entry.Item2.Value;
+            if (retainerInventory == null)
+                continue;
+
+            if (!RetainerData.TryGetValue(entry.Item1, out var dict))
             {
                 dict = new Dictionary<uint, ItemInfo>();
-                RetainerData[retainerId] = dict;
+                RetainerData[entry.Item1] = dict;
             }
 
-            foreach (var itemId in allItemIds)
+            for (var slot = 0; slot < retainerInventory->ItemIds.Length; slot++)
             {
-                var count = GetRetainerInventoryItem(itemId, retainerId);
-                dict[itemId] = new ItemInfo(itemId, count);
+                var itemId = NormalizeItemId(retainerInventory->ItemIds[slot]);
+                if (itemId == 0 || !allItemIds.Contains(itemId))
+                    continue;
+
+                var quantity = retainerInventory->ItemCount[slot];
+                if (quantity == 0)
+                    continue;
+
+                AddItemQuantity(dict, itemId, quantity);
             }
+
+            // 雇员装备位每件只占一格，直接按 1 计
+            foreach (var rawItemId in retainerInventory->EquippedItemIds)
+            {
+                var itemId = NormalizeItemId(rawItemId);
+                if (itemId == 0 || !allItemIds.Contains(itemId))
+                    continue;
+
+                AddItemQuantity(dict, itemId, 1);
+            }
+
+            scannedRetainerCount++;
         }
 
-        // 预计算每个物品的全雇员合计数量，后续查询直接读缓存
+        // 投影台：每格存放一件武器/装备，命中即按 1 计
+        var dresserMatchCount = 0;
+        foreach (var rawItemId in finder->GlamourDresserItemIds)
+        {
+            var itemId = NormalizeItemId(rawItemId);
+            if (itemId == 0 || !allItemIds.Contains(itemId))
+                continue;
+
+            _itemTotalCache.TryGetValue(itemId, out var existing);
+            _itemTotalCache[itemId] = existing + 1;
+            dresserMatchCount++;
+        }
+
+        // 预计算每个物品的雇员合计数量，后续查询直接读缓存
         foreach (var dict in RetainerData.Values)
             foreach (var info in dict.Values)
             {
@@ -185,10 +127,10 @@ public static class Inventory
 
         DataCached = true;
         PluginService.PluginLog.Debug(
-            $"AT.IPC 缓存刷新完成：{RetainerData.Count} 个雇员，{allItemIds.Count} 个物品");
+            $"ItemFinder 缓存扫描完成：{scannedRetainerCount} 个雇员，投影台命中 {dresserMatchCount} 件");
     }
 
-    private static void ClearRetainerCache(int _, int __)
+    private static void ClearCachedData(int _, int __)
     {
         RetainerData.Clear();
         _itemTotalCache.Clear();
@@ -228,33 +170,43 @@ public static class Inventory
         return set;
     }
 
-    private static void SetupIpc(bool _)
+    /// <summary>收集需要缓存的全部物品 ID：追踪武器 + 配方材料。</summary>
+    private static HashSet<uint> CollectTrackedItemIds()
     {
-        _itemCountIpc = PluginService.PluginInterface.GetIpcSubscriber<uint, ulong, uint, uint>("AllaganTools.ItemCount");
+        var allItemIds = BuildTrackedWeaponIds();
+
+        // 从配方表自动收集所有材料 ID，避免与 DataBase 重复维护
+        foreach (var recipe in DataBase.BozjaMaterialRecipes
+                     .Concat(DataBase.MandervillousMaterialRecipes)
+                     .Concat(DataBase.PhantomMaterialRecipes)
+                     .Concat(DataBase.EurekaMaterialRecipes)
+                     .SelectMany(stage => stage))
+        {
+            allItemIds.Add(recipe.ItemId);
+        }
+
+        return allItemIds;
     }
 
-    // ---- 雇员背包缓存 ----
+    /// <summary>把 ItemFinder 缓存中的 HQ/收藏品高位编码还原为基准 ItemId。</summary>
+    private static uint NormalizeItemId(uint itemId)
+        => itemId >= 1_000_000 ? itemId % 1_000_000 : itemId;
+
+    private static void AddItemQuantity(Dictionary<uint, ItemInfo> dict, uint itemId, uint quantity)
+    {
+        if (dict.TryGetValue(itemId, out var info))
+            info.Quantity += quantity;
+        else
+            dict[itemId] = new ItemInfo(itemId, quantity);
+    }
+
+    // ---- 雇员背包 + 投影台缓存 ----
     internal static readonly Dictionary<ulong, Dictionary<uint, ItemInfo>> RetainerData = new();
 
-    private static uint GetRetainerInventoryItem(uint itemId, ulong retainerId)
+    /// <summary>获取某物品在雇员背包（含雇员装备位）与投影台中的缓存合计数量。</summary>
+    private static unsafe int GetRetainerItemCount(uint itemId)
     {
-        if (!ATools || _itemCountIpc == null) return 0;
-
-        return _itemCountIpc.InvokeFunc(itemId, retainerId, 10000)
-             + _itemCountIpc.InvokeFunc(itemId, retainerId, 10001)
-             + _itemCountIpc.InvokeFunc(itemId, retainerId, 10002)
-             + _itemCountIpc.InvokeFunc(itemId, retainerId, 10003)
-             + _itemCountIpc.InvokeFunc(itemId, retainerId, 10004)
-             + _itemCountIpc.InvokeFunc(itemId, retainerId, 10005)
-             + _itemCountIpc.InvokeFunc(itemId, retainerId, 10006)
-             + _itemCountIpc.InvokeFunc(itemId, retainerId, (uint)InventoryType.RetainerCrystals);
-    }
-
-    public static unsafe int GetRetainerItemCount(uint itemId)
-    {
-        EnsureIpcConnected();
-
-        if (!ATools) return 0;
+        if (!ItemFinderReady) return 0;
         if (!PluginService.ClientState.IsLoggedIn || PluginService.Condition[ConditionFlag.OnFreeTrial])
             return 0;
 
@@ -267,7 +219,7 @@ public static class Inventory
             }
             catch (Exception ex)
             {
-                PluginService.PluginLog?.Warning($"获取雇员背包数据异常: {ex.Message}");
+                PluginService.PluginLog?.Warning($"获取雇员/投影台缓存数据异常: {ex.Message}");
                 return 0;
             }
         }
@@ -280,23 +232,19 @@ public static class Inventory
 
     public static unsafe int GetItemCountTotal(uint itemId)
     {
-        var countInRetainers   = GetRetainerItemCount(itemId);
-        var inventoryManager   = InventoryManager.Instance();
-        var countInBag         = inventoryManager->GetInventoryItemCount(itemId);
-        var countInSaddleBag   = inventoryManager->GetItemCountInContainer(itemId, InventoryType.SaddleBag1)
-                               + inventoryManager->GetItemCountInContainer(itemId, InventoryType.SaddleBag2);
-        return countInRetainers + countInBag + countInSaddleBag;
+        var countInCachedStorage = GetRetainerItemCount(itemId);
+        var inventoryManager     = InventoryManager.Instance();
+        var countInBag           = inventoryManager->GetInventoryItemCount(itemId);
+        var countInSaddleBag     = inventoryManager->GetItemCountInContainer(itemId, InventoryType.SaddleBag1)
+                                 + inventoryManager->GetItemCountInContainer(itemId, InventoryType.SaddleBag2);
+        return countInCachedStorage + countInBag + countInSaddleBag;
     }
 
     public static void Dispose()
     {
         PluginService.GameInventory.ItemAdded -= OnItemAdded;
         CacheAutoRefreshed = null;
-        _initializedEvent?.Unsubscribe(SetupIpc);
-        PluginService.ClientState.Logout -= ClearRetainerCache;
-        _initializedEvent = null;
-        _isInitialized    = null;
-        _itemCountIpc     = null;
-        _refreshPending   = false;
+        PluginService.ClientState.Logout -= ClearCachedData;
+        _refreshPending = false;
     }
 }

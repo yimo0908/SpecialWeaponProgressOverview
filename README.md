@@ -22,11 +22,11 @@
 - 📊 **实时进度显示**
   - 自动获取当前武器阶段和进度
 - 📦 **自动背包扫描**
-  - 角色背包、陆行鸟鞍囊直接读取，雇员背包（最多 10 个）通过 Allagan Tools IPC 获取
+  - 角色背包、陆行鸟鞍囊直接读取；雇员背包（最多 10 个）与投影台读取游戏自带道具检索缓存，无需第三方插件
 - 💡 **材料需求统计**
   - 精确计算各阶段材料需求（优武、义武、曼武、幻武）
-- 🔄 **IPC 数据缓存**
-  - 一键刷新并缓存所有武器和材料数据，避免重复 IPC 调用
+- 🔄 **扫描数据缓存**
+  - 一键刷新并缓存雇员背包与投影台中的武器和材料数据，避免重复扫描
   - 获得追踪武器时自动刷新缓存并更新界面（同帧事件合并）
 - 💬 **进度评语**
   - 根据总进度百分比随机显示趣味评语，可通过 `ProgressComments.json` 自定义
@@ -41,16 +41,15 @@
 
 - FFXIV 客户端
 - Dalamud
-- Allagan Tools（读取雇员背包数据所需）
 
 ## 使用说明
 
-1. 安装 Dalamud 和 Allagan Tools 插件。
+1. 安装 Dalamud。
 2. 添加仓库链接  
    ```https://raw.githubusercontent.com/yimo0908/DalamudPlugin/main/repo.json```
 3. 搜索并安装 SpecialWeaponProgressOverview 插件。
 4. 使用 `/pover` 命令打开主界面。
-5. 点击「刷新」按钮获取最新武器进度数据（首次使用前请先交互传唤铃以加载雇员背包数据）。
+5. 点击「刷新」按钮获取最新武器进度数据（首次使用前请先交互传唤铃或做一次道具检索；未打开的雇员或未检索过的投影台可能使用旧缓存）。
 6. 如需开关商店界面优化功能，勾选/取消主界面右上角的「商店界面优化」复选框。
 
 ## 开发指南
@@ -65,7 +64,7 @@ SpecialWeaponProgressOverview/
 ├── Data/                                 # 数据处理和计算
 │   ├── Compute.cs                        # 材料需求计算引擎
 │   ├── DataBase.cs                       # 武器 ID、职业列表、材料配方
-│   ├── Inventory.cs                      # 背包扫描与 Allagan Tools IPC 缓存
+│   ├── Inventory.cs                      # 背包扫描与雇员/投影台缓存
 │   ├── ProgressComments.cs               # 进度评语加载与随机抽取
 │   └── Providers/
 │       └── IconHandler.cs                # 图标纹理缓存

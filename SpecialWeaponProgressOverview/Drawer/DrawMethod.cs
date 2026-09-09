@@ -99,7 +99,7 @@ public static class DrawMethod
     public static float WeaponCellHeight => ImGui.GetTextLineHeight() * 2.5f;
 
     /// <summary>在当前单元格内居中绘制武器图标（2倍大小+边框）。</summary>
-    public static void DrawWeaponCell(int count, uint itemId, Vector4? nameColor = null)
+    public static void DrawWeaponCell(int count, uint itemId)
     {
         var entry = GetOrCreateCacheEntry(itemId);
 

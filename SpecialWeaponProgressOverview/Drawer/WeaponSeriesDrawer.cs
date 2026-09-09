@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Lumina.Excel;
@@ -137,15 +136,11 @@ public class WeaponSeriesDrawer
                         continue;
                     }
                     var itemId = info.WeaponIdStages[j][jobIndex];
-                    var nameColor = line[j] > 0
-                                    && (info.Series == WeaponSeries.Ultimate || info.IsFinalStage(j))
-                        ? PixelStyle.Green
-                        : (Vector4?)null;
                     // 图标在单元格内垂直居中
                     var iconSize = DrawMethod.WeaponIconSize;
                     var vertOffset = Math.Max(0f, (rowHeight - iconSize) / 2f);
                     ImGui.SetCursorPosY(ImGui.GetCursorPosY() + vertOffset);
-                    DrawMethod.DrawWeaponCell(line[j], itemId, nameColor);
+                    DrawMethod.DrawWeaponCell(line[j], itemId);
                 }
 
                 // 末尾空列

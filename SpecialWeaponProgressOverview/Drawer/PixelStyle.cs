@@ -25,10 +25,10 @@ public static class PixelStyle
     public static readonly Vector4 Red       = new(1.0f, 0.35f, 0.35f, 1f);
 
     // ---- 进度色 ----
-    public static readonly Vector4 ProgressComplete = new(0.2f, 0.9f, 0.25f, 1f);
-    public static readonly Vector4 ProgressHigh     = new(0.3f, 0.7f, 1f, 1f);
-    public static readonly Vector4 ProgressMid      = new(1f, 0.78f, 0.25f, 1f);
-    public static readonly Vector4 ProgressLow      = new(1f, 0.35f, 0.35f, 1f);
+    private static readonly Vector4 ProgressComplete = new(0.2f, 0.9f, 0.25f, 1f);
+    private static readonly Vector4 ProgressHigh     = new(0.3f, 0.7f, 1f, 1f);
+    private static readonly Vector4 ProgressMid      = new(1f, 0.78f, 0.25f, 1f);
+    private static readonly Vector4 ProgressLow      = new(1f, 0.35f, 0.35f, 1f);
 
     // ---- 图标 ----
     public static readonly Vector4 IconBorder = new(0.22f, 0.22f, 0.28f, 0.8f);

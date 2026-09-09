@@ -175,14 +175,15 @@ public class MainWindow : Window, IDisposable
     private void DrawStatusBar()
     {
         // 提示文字在前
-        ImGui.Text("登录后首次查询前请先交互传唤铃，以获取雇员背包数据");
+        ImGui.Text("雇员与投影台取游戏缓存，首次请先交互传唤铃或做道具检索");
 
-        // Allagan Tools 状态 + 缓存状态 紧跟提示文字
+        // ItemFinder 缓存数据源状态 + 扫描缓存状态 紧跟提示文字
+        var dataSourceReady = Inventory.ItemFinderReady;
         ImGui.SameLine();
-        ImGui.Text("AT IPC:");
+        ImGui.Text("数据源:");
         ImGui.SameLine();
-        ImGui.TextColored(Inventory.ATools ? PixelStyle.Green : PixelStyle.Red,
-                          Inventory.ATools ? "就绪" : "未就绪");
+        ImGui.TextColored(dataSourceReady ? PixelStyle.Green : PixelStyle.Red,
+                          dataSourceReady ? "就绪" : "未就绪");
 
         ImGui.SameLine();
         ImGui.Text( "缓存:");
@@ -191,6 +192,8 @@ public class MainWindow : Window, IDisposable
             ImGui.TextColored(PixelStyle.Green, "已缓存");
         else
             ImGui.TextColored(PixelStyle.Gray, "未缓存");
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("雇员/投影台数据来自游戏自带道具检索缓存；未交互传唤铃或未做道具检索时可能仍是旧缓存");
 
         // 刷新按钮紧跟缓存状态后面，稍微突出
         ImGui.SameLine();

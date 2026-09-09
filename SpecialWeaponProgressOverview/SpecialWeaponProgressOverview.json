@@ -2,7 +2,7 @@
   "Author": "KirisameVanilla, Yimo",
   "Name": "SpecialWeaponProgressOverview",
   "Punchline": "一个用来检测和快速查询肝武进度的小工具。",
-  "Description": "一个用来检测和快速查询肝武进度的小工具。\n（如肝武放置在雇员身上则需要官库的Allagan Tools,暂不支持幻化柜数据）",
+  "Description": "一个用来检测和快速查询肝武进度的小工具。\n角色背包直接读取，雇员背包与投影台读取游戏自带道具检索缓存，无需 Allagan Tools。",
   "ApplicableVersion": "any",
   "Tags": [
     "Bozja", "Weapon", "Eureka"
